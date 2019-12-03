@@ -1,61 +1,71 @@
-package com.ae.aoc2019.day02
+package com.ae.aoc2019.day03
 
 import org.slf4j.LoggerFactory
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import java.io.BufferedReader
-import java.io.InputStream
 import java.io.InputStreamReader
-import java.lang.Exception
+import kotlin.math.absoluteValue
 
 @SpringBootApplication
 class Aoc2019ApplicationDay03 : CommandLineRunner {
 
 	private val logger = LoggerFactory.getLogger(javaClass)
 
-	private fun runProgram(noun: Int, verb: Int, program: ArrayList<Int>) : Int {
-		program[1] = noun
-		program[2] = verb
-
-		var pc = 0 // Yeah I passed computer organisation back in the day.
-		while (true) {
-			if (program[pc] == 99) {
-				break
-			}else if (program[pc] == 1) {
-				val v1 = program[program[pc + 1]]
-				val v2 = program[program[pc + 2]]
-				val dest = program[pc + 3]
-				program[dest] = v1 + v2
-			} else if (program[pc] == 2) {
-				val v1 = program[program[pc + 1]]
-				val v2 = program[program[pc + 2]]
-				val dest = program[pc + 3]
-				program[dest] = v1 * v2
-			}
-			pc += 4
+	class Point(val x : Int, val y : Int) {
+		fun disstanceFromOrigin() : Int {
+			return x.absoluteValue + y.absoluteValue
 		}
 
-		return program[0]
+		fun createPointFromHere(wireEntry : String) : Point {
+			val direction = wireEntry[0]
+			val range = wireEntry.substring(1).toInt()
+			return when (direction) {
+				'U' -> Point(x, y + range)
+				'D' -> Point(x, y - range)
+				'L' -> Point(x - range, y)
+				'R' -> Point(x + range, y)
+				else -> throw IllegalStateException("Unexpected input")
+			}
+		}
 	}
 
+	class WireEntry(val start: Point, val end: Point) {
+		fun intersects(other: WireEntry) : Point? {
+			return null
+		}
+	}
 
-	override fun run(vararg args: String?) {
-		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay02::class.java.getResourceAsStream(args[0]!!)))
-		bufferedReader.useLines {
-			it.forEach { line ->
-				for (noun in 0..99) {
-					for (verb in 0..99) {
-						val program = ArrayList(line.split(",").map { it.toInt() })
-						val result = runProgram(noun, verb, program)
-						if (result == 19690720) {
-							logger.info("Answer => ${100 * noun + verb} ..")
-							return
-						}
+	class Wire(val wireEntries: ArrayList<WireEntry> = ArrayList()) {
+
+		fun intersections(other: Wire) : List<Point> {
+			return sequence {
+				for (l in wireEntries) {
+					for (r in other.wireEntries) {
+						yield(l.intersects(r))
 					}
 				}
-			}
+			}.filter { it != null }
+			 .map { it!! }
+			 .toList()
+			 .sortedBy { it.disstanceFromOrigin() }
 		}
+
+		fun addWireEntry(wireEntry: String) {
+			val start = if (wireEntries.isEmpty()) Point(0,0)
+			        else Point(0,0)
+			val end = start.createPointFromHere(wireEntry)
+			wireEntries.add(WireEntry(start, end))
+		}
+	}
+
+	override fun run(vararg args: String?) {
+		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay03::class.java.getResourceAsStream(args[0]!!)))
+		val first = Wire()
+		val second = Wire()
+		val l = bufferedReader.readLine().split(',').forEach { first.addWireEntry(it) }
+		val r = bufferedReader.readLine().split(',').forEach { second.addWireEntry(it)  }
 	}
 }
 
