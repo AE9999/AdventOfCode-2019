@@ -12,9 +12,6 @@ import kotlin.math.min
 
 @SpringBootApplication
 class Aoc2019ApplicationDay03 : CommandLineRunner {
-	companion object {
-//		val logger = LoggerFactory.getLogger(javaClass)
-	}
 
 	class Point(val x : Int, val y : Int) {
 		fun distanceFromOrigin() : Int {
@@ -36,8 +33,6 @@ class Aoc2019ApplicationDay03 : CommandLineRunner {
 		override fun toString(): String {
 			return "Point(x=$x, y=$y)"
 		}
-
-
 	}
 
 	class WireEntry(val start: Point, val end: Point) {
@@ -50,16 +45,27 @@ class Aoc2019ApplicationDay03 : CommandLineRunner {
 			return min(start.y, end.y)..max(start.y, end.y)
 		}
 
+		fun contains(point: Point) : Boolean {
+			return xrange().contains(point.x) && yrange().contains(point.y)
+		}
+
+		fun lenght() : Int {
+			return (max(start.x, end.x) - min(start.x, end.x)) +
+				   (max(start.y, end.y) - min(start.y, end.y))
+		}
+
+		fun lenghtToPoint(point: Point) : Int {
+			return (max(start.x, point.x) - min(start.x, point.x)) +
+					(max(start.y, point.y) - min(start.y, point.y))
+		}
+
 		fun intersects(other: WireEntry) : Point? {
-//			System.out.println("Checking ${this} vs ${other} ")
 			val xintersection = xrange().intersect(other.xrange())
 			val yintersection = yrange().intersect(other.yrange())
 			if (xintersection.isEmpty() || yintersection.isEmpty()) {
-//				System.out.println("No intersection ..")
 				return null
 			}
 			val point = Point(xintersection.first(), yintersection.first())
-//			System.out.println("Found ${point} as intersection ..\n\n")
 			return point
 		}
 
@@ -95,23 +101,34 @@ class Aoc2019ApplicationDay03 : CommandLineRunner {
 			return "Wire(wireEntries=$wireEntries)"
 		}
 
-
+		fun distanceToPoint(point: Point): Int {
+			var travledDistance = 0
+			for (wireEntry in wireEntries) {
+				if (wireEntry.contains(point)) {
+					travledDistance += wireEntry.lenghtToPoint(point)
+					return travledDistance
+				}
+				travledDistance += wireEntry.lenght()
+			}
+			throw IllegalStateException("Did not reach specified point ..")
+		}
 	}
+
+
 
 	override fun run(vararg args: String?) {
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay03::class.java.getResourceAsStream(args[0]!!)))
 		val firstWire = Wire()
 		val secondWire = Wire()
 		bufferedReader.readLine().split(',').forEach { firstWire.addWireEntry(it) }
-//		System.out.println("First wire:\n$firstWire")
 		bufferedReader.readLine().split(',').forEach { secondWire.addWireEntry(it)  }
-//		System.out.println("Second wire:\n$secondWire\n\n")
-		val intersections = firstWire.intersections(secondWire)
-		val result = intersections.filter { it.x != 0 || it.y != 0 }
-				                  .first()
+		val intersections = firstWire.intersections(secondWire).filter { it.x != 0 || it.y != 0 }
+		val result = intersections.first()
 		System.out.println("Solution: ${result.distanceFromOrigin()} ..")
-
-
+		val closestIntersection = intersections.map { Pair(it, firstWire.distanceToPoint(it) + secondWire.distanceToPoint(it) ) }
+				                               .sortedBy { it.second }
+				                               .first()
+		System.out.println("Solution: ${closestIntersection} ..")
 	}
 }
 
