@@ -17,13 +17,30 @@ class Aoc2019ApplicationDay04 : CommandLineRunner {
 		var seenSequence = false
 		var bound = target[0].toInt()
 		for (i in 1 until target.length) {
-			if (target[i].toInt() < bound) {
-				return false
-			}
+			if (target[i].toInt() < bound) return false
 			bound = max(bound, target[i].toInt())
 			seenSequence =  seenSequence || target[i-1] == target[i]
 		}
 		return seenSequence
+	}
+
+	fun matchesMoreStrict(target: String) : Boolean {
+
+		var bound = target[0].toInt()
+		var seenStrictSequence = false
+		var cc = target[0]
+		var ca = 1
+		for (i in 1 until target.length) {
+			if (target[i].toInt() < bound) return false
+			bound = max(bound, target[i].toInt())
+
+			if (cc == target[i]) {
+				ca += 1
+			} else {
+				seenStrictSequence = seenStrictSequence || ca == 2
+			}
+		}
+		return
 	}
 
 	override fun run(vararg args: String?) {
@@ -32,11 +49,20 @@ class Aoc2019ApplicationDay04 : CommandLineRunner {
 		System.out.println(matches("123789"))
 		System.out.println(matches("372037"))
 		System.out.println(matches("905157"))
-		var matches = 0;
+		var matches = 0
 		for (x in  372037..905157) {
 			matches += if (matches(x.toString())) 1 else 0
 		}
 		System.out.println("Found $matches matches ..")
+
+		System.out.println(matchesMoreStrict("112233"))
+		System.out.println(matchesMoreStrict("123444"))
+		System.out.println(matchesMoreStrict("111122"))
+		matches = 0
+		for (x in  372037..905157) {
+			matches += if (matchesMoreStrict(x.toString())) 1 else 0
+		}
+		System.out.println("Found $matches more strict matches ..")
 	}
 }
 
