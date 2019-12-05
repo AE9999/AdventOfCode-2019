@@ -8,6 +8,7 @@ import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.lang.Exception
+import java.lang.RuntimeException
 
 @SpringBootApplication
 class Aoc2019ApplicationDay05 : CommandLineRunner {
@@ -15,23 +16,19 @@ class Aoc2019ApplicationDay05 : CommandLineRunner {
 	private val logger = LoggerFactory.getLogger(javaClass)
 
 	private fun getValue(instruction: String, parameter: Int, pc: Int, program: ArrayList<Int>) : Int {
-		return if (instruction[parameter].toInt() == 1) program[pc + parameter]
+		return if (instruction[parameter].toString().toInt() == 1) program[pc + parameter]
 		       else program[program[pc + parameter]]
 	}
 
-	private fun runProgram(noun: Int,
-						   verb: Int,
-						   program: ArrayList<Int>,
+	private fun runProgram(program: ArrayList<Int>,
 						   inputs: Iterator<Int>) : Int {
-		program[1] = noun
-		program[2] = verb
 
 		var pc = 0 // Yeah I passed computer organisation back in the day.
 		while (true) {
 			val instruction = program[pc].toString().padStart(4, '0')
-			val opcode = instruction[3].toInt()
+			val opcode = instruction.substring(2).toInt()
 			var inc = 0
-			if (program[pc] == 99) {
+			if (opcode == 99) {
 				break
 			} else if (opcode == 1) {
 				val v1 =  getValue(instruction, 1, pc, program)
@@ -52,6 +49,8 @@ class Aoc2019ApplicationDay05 : CommandLineRunner {
 				val v1 = getValue(instruction, 1, pc, program)
 				System.out.println(program[v1])
 				inc = 2
+			} else {
+				throw RuntimeException("Illegal Instruction ${opcode}")
 			}
 			pc += inc
 		}
@@ -65,7 +64,7 @@ class Aoc2019ApplicationDay05 : CommandLineRunner {
 		bufferedReader.useLines {
 			it.forEach { line ->
 				val program = ArrayList(line.split(",").map { it.toInt() })
-				val result = runProgram(program[1], program[2], program, arrayOf(1).iterator())
+				runProgram(program, arrayOf(1).iterator())
 			}
 		}
 	}
