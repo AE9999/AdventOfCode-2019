@@ -16,8 +16,10 @@ class Aoc2019ApplicationDay05 : CommandLineRunner {
 	private val logger = LoggerFactory.getLogger(javaClass)
 
 	private fun getValue(instruction: String, parameter: Int, pc: Int, program: ArrayList<Int>) : Int {
-		return if (instruction[parameter].toString().toInt() == 1) program[pc + parameter]
-		       else program[program[pc + parameter]]
+		return if (instruction[2 - parameter].toString().toInt() == 1)
+					program[pc + parameter + 1]
+		       else
+					program[program[pc + parameter  + 1]]
 	}
 
 	private fun runProgram(program: ArrayList<Int>,
@@ -25,29 +27,30 @@ class Aoc2019ApplicationDay05 : CommandLineRunner {
 
 		var pc = 0 // Yeah I passed computer organisation back in the day.
 		while (true) {
-			val instruction = program[pc].toString().padStart(4, '0')
-			val opcode = instruction.substring(2).toInt()
-			var inc = 0
+			val instruction = program[pc].toString().padStart(5, '0')
+			val opcode = instruction.substring(3).toInt()
+			var inc: Int
 			if (opcode == 99) {
 				break
 			} else if (opcode == 1) {
-				val v1 =  getValue(instruction, 1, pc, program)
-				val v2 = getValue(instruction, 2, pc, program)
-				val dest = getValue(instruction, 3, pc, program)
+				val v1 =  getValue(instruction, 0, pc, program)
+				val v2 = getValue(instruction, 1, pc, program)
+				val dest = program[pc + 3]
 				program[dest] = v1 + v2
 				inc = 4
 			} else if (opcode == 2) {
-				val v1 = getValue(instruction, 1, pc, program)
-				val v2 = getValue(instruction, 2, pc, program)
-				val dest = getValue(instruction, 3, pc, program)
+				val v1 = getValue(instruction, 0, pc, program)
+				val v2 = getValue(instruction, 1, pc, program)
+				val dest = program[pc + 3]
 				program[dest] = v1 * v2
+				inc = 4
 			} else if (opcode == 3) {
-				val v1 = getValue(instruction, 1, pc, program)
+				val v1 = program[pc + 1]
 				program[v1] = inputs.next()
 				inc = 2
-			} else if (opcode == 3) {
-				val v1 = getValue(instruction, 1, pc, program)
-				System.out.println(program[v1])
+			} else if (opcode == 4) {
+				val v1 = getValue(instruction, 0, pc, program)
+				System.out.println("Output $v1")
 				inc = 2
 			} else {
 				throw RuntimeException("Illegal Instruction ${opcode}")
