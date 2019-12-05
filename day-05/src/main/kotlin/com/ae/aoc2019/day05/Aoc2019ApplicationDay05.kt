@@ -14,37 +14,46 @@ class Aoc2019ApplicationDay05 : CommandLineRunner {
 
 	private val logger = LoggerFactory.getLogger(javaClass)
 
-//	private fun getVal(program: ArrayList<Int>, value: Int, mode: Int) : Int {
-//		if (mode == 1) return value
-//		return program[value]
-//	}
+	private fun getValue(instruction: String, parameter: Int, pc: Int, program: ArrayList<Int>) : Int {
+		return if (instruction[parameter].toInt() == 1) program[pc + parameter]
+		       else program[program[pc + parameter]]
+	}
 
-	private fun runProgram(noun: Int, verb: Int, program: ArrayList<Int>) : Int {
+	private fun runProgram(noun: Int,
+						   verb: Int,
+						   program: ArrayList<Int>,
+						   inputs: Iterator<Int>) : Int {
 		program[1] = noun
 		program[2] = verb
 
 		var pc = 0 // Yeah I passed computer organisation back in the day.
 		while (true) {
-			val instruction = program[pc]
-			var jump = 0
+			val instruction = program[pc].toString().padStart(4, '0')
+			val opcode = instruction[3].toInt()
+			var inc = 0
 			if (program[pc] == 99) {
 				break
-			} else if (instruction == 1) {
-				val v1 = program[program[pc + 1]]
-				val v2 = program[program[pc + 2]]
-				val dest = program[pc + 3]
+			} else if (opcode == 1) {
+				val v1 =  getValue(instruction, 1, pc, program)
+				val v2 = getValue(instruction, 2, pc, program)
+				val dest = getValue(instruction, 3, pc, program)
 				program[dest] = v1 + v2
-			} else if (instruction == 2) {
-				val v1 = program[program[pc + 1]]
-				val v2 = program[program[pc + 2]]
-				val dest = program[pc + 3]
+				inc = 4
+			} else if (opcode == 2) {
+				val v1 = getValue(instruction, 1, pc, program)
+				val v2 = getValue(instruction, 2, pc, program)
+				val dest = getValue(instruction, 3, pc, program)
 				program[dest] = v1 * v2
-			} else if (instruction== 3) {
-				program[program[pc + 1]] = program[pc + 1]
-			} else if (instruction == 3) {
-				System.out.println(program[program[pc + 1]])
+			} else if (opcode == 3) {
+				val v1 = getValue(instruction, 1, pc, program)
+				program[v1] = inputs.next()
+				inc = 2
+			} else if (opcode == 3) {
+				val v1 = getValue(instruction, 1, pc, program)
+				System.out.println(program[v1])
+				inc = 2
 			}
-			pc += 4
+			pc += inc
 		}
 
 		return program[0]
@@ -55,16 +64,8 @@ class Aoc2019ApplicationDay05 : CommandLineRunner {
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay05::class.java.getResourceAsStream(args[0]!!)))
 		bufferedReader.useLines {
 			it.forEach { line ->
-				for (noun in 0..99) {
-					for (verb in 0..99) {
-						val program = ArrayList(line.split(",").map { it.toInt() })
-						val result = runProgram(noun, verb, program)
-						if (result == 19690720) {
-							logger.info("Answer => ${100 * noun + verb} ..")
-							return
-						}
-					}
-				}
+				val program = ArrayList(line.split(",").map { it.toInt() })
+				val result = runProgram(program[1], program[2], program, arrayOf(1).iterator())
 			}
 		}
 	}
