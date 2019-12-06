@@ -9,16 +9,43 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.lang.Exception
 import java.lang.RuntimeException
+import java.util.*
 
 @SpringBootApplication
 class Aoc2019ApplicationDay06 : CommandLineRunner {
 
+	private fun countParents(identiefier: String, fp: HashMap<String, ArrayList<String>>) : Int {
+		val seen = HashSet<String>()
+		val toDo = Stack<String>()
+		var nOrbits = 0
+		toDo.push(identiefier)
+		while (!toDo.empty()) {
+			val currentId = toDo.pop()
+			val orbits = fp.getOrDefault(currentId, ArrayList())
+			seen.add(currentId)
+			nOrbits += orbits.size
+			orbits.filter { !seen.contains(it) }.forEach { toDo.push(it) }
+
+		}
+		return nOrbits
+	}
+
 	override fun run(vararg args: String?) {
+        val nodes = HashSet<String>()
+        val fp = HashMap<String, ArrayList<String>>()
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay06::class.java.getResourceAsStream(args[0]!!)))
 		bufferedReader.useLines {
 			it.forEach { line ->
+				line.split(')').forEach { nodes.add(it) }
+				val pair = line.split(')').zipWithNext().map { Pair(it.second, it.first) }.first()
+				if (!fp.containsKey(pair.first)) {
+					fp[pair.first] = ArrayList()
+				}
+				fp[pair.first]!!.add(pair.second)
 			}
 		}
+		System.out.println("Found ${nodes.map { countParents(it, fp) }.sum()} direct and indirect orbits")
+
 	}
 }
 
