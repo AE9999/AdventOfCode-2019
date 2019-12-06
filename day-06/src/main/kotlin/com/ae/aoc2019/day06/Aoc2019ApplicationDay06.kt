@@ -30,6 +30,24 @@ class Aoc2019ApplicationDay06 : CommandLineRunner {
 		return nOrbits
 	}
 
+
+
+    private fun findNrOfOrbits(source: String,
+                               targets: Set<String>,
+                               fp: HashMap<String, ArrayList<String>>) : Int {
+        var optimalPath = Int.MAX_VALUE
+        val seen = HashSet<String>()
+        val toDo = Stack<Pair<String, Int>>()
+        while (!toDo.isEmpty()) {
+            val currentId = toDo.peek().first
+            val currentDistance = toDo.peek().second
+            toDo.pop()
+            val orbits = fp.getOrDefault(currentId, ArrayList())
+            orbits.filter { !seen.contains(it) }.forEach { toDo.push(it) }
+        }
+        return optimalPath
+    }
+
 	override fun run(vararg args: String?) {
         val nodes = HashSet<String>()
         val fp = HashMap<String, ArrayList<String>>()
@@ -45,6 +63,8 @@ class Aoc2019ApplicationDay06 : CommandLineRunner {
 			}
 		}
 		System.out.println("Found ${nodes.map { countParents(it, fp) }.sum()} direct and indirect orbits")
+
+        val targets =  fp["SAN"]!!
 
 	}
 }
