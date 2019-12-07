@@ -28,80 +28,102 @@ class Aoc2019ApplicationDay07 : CommandLineRunner {
 		return perms
 	}
 
-	private fun getValue(instruction: String, parameter: Int, pc: Int, program: MutableList<Int>) : Int =
-			if (instruction[2 - parameter].toString().toInt() == 1)
-				program[pc + parameter + 1]
-			else
-				program[program[pc + parameter  + 1]]
+	class Program(val program: MutableList<Int>) {
+		var pc = 0
 
-	private fun runProgram(program: MutableList<Int>,
-						   inputs: Iterator<Int>) : Int {
+		private fun getValue(instruction: String, parameter: Int, pc: Int, program: MutableList<Int>) : Int =
+				if (instruction[2 - parameter].toString().toInt() == 1)
+					program[pc + parameter + 1]
+				else
+					program[program[pc + parameter  + 1]]
 
-		var pc = 0 // Yeah I passed computer organisation back in the day.
-		while (true) {
-			val instruction = program[pc].toString().padStart(5, '0')
-			val opcode = instruction.substring(3).toInt()
-			if (opcode == 99) {
-				break
-			} else if (opcode == 1) {
-				val v1 =  getValue(instruction, 0, pc, program)
-				val v2 = getValue(instruction, 1, pc, program)
-				val dest = program[pc + 3]
-				program[dest] = v1 + v2
-				pc += 4
-			} else if (opcode == 2) {
-				val v1 = getValue(instruction, 0, pc, program)
-				val v2 = getValue(instruction, 1, pc, program)
-				val dest = program[pc + 3]
-				program[dest] = v1 * v2
-				pc += 4
-			} else if (opcode == 3) {
-				val v1 = program[pc + 1]
-				program[v1] = inputs.next()
-				pc += 2
-			} else if (opcode == 4) {
-				val v1 = getValue(instruction, 0, pc, program)
-				pc += 2
-				return v1
-			} else if (opcode == 5) {
-				val v1 = getValue(instruction, 0, pc, program)
-				if (v1 != 0)
-					pc = getValue(instruction, 1, pc, program)
-				else
-					pc += 3
-			} else if (opcode == 6) {
-				val v1 = getValue(instruction, 0, pc, program)
-				if (v1 == 0)
-					pc = getValue(instruction, 1, pc, program)
-				else
-					pc += 3
-			} else if (opcode == 7) {
-				val v1 = getValue(instruction, 0, pc, program)
-				val v2 = getValue(instruction, 1, pc, program)
-				val dest = program[pc + 3]
-				program[dest] = if (v1 < v2) 1 else 0
-				pc += 4
-			} else if (opcode == 8) {
-				val v1 = getValue(instruction, 0, pc, program)
-				val v2 = getValue(instruction, 1, pc, program)
-				val dest = program[pc + 3]
-				program[dest] = if (v1 == v2) 1 else 0
-				pc += 4
-			} else {
-				throw RuntimeException("Illegal Instruction ${opcode}")
+		fun run(inputs: Iterator<Int>) : Int {
+			while (true) {
+				val instruction = program[pc].toString().padStart(5, '0')
+				val opcode = instruction.substring(3).toInt()
+				if (opcode == 99) {
+					return -1
+				} else if (opcode == 1) {
+					val v1 =  getValue(instruction, 0, pc, program)
+					val v2 = getValue(instruction, 1, pc, program)
+					val dest = program[pc + 3]
+					program[dest] = v1 + v2
+					pc += 4
+				} else if (opcode == 2) {
+					val v1 = getValue(instruction, 0, pc, program)
+					val v2 = getValue(instruction, 1, pc, program)
+					val dest = program[pc + 3]
+					program[dest] = v1 * v2
+					pc += 4
+				} else if (opcode == 3) {
+					val v1 = program[pc + 1]
+					program[v1] = inputs.next()
+					pc += 2
+				} else if (opcode == 4) {
+					val v1 = getValue(instruction, 0, pc, program)
+					pc += 2
+					return v1
+				} else if (opcode == 5) {
+					val v1 = getValue(instruction, 0, pc, program)
+					if (v1 != 0)
+						pc = getValue(instruction, 1, pc, program)
+					else
+						pc += 3
+				} else if (opcode == 6) {
+					val v1 = getValue(instruction, 0, pc, program)
+					if (v1 == 0)
+						pc = getValue(instruction, 1, pc, program)
+					else
+						pc += 3
+				} else if (opcode == 7) {
+					val v1 = getValue(instruction, 0, pc, program)
+					val v2 = getValue(instruction, 1, pc, program)
+					val dest = program[pc + 3]
+					program[dest] = if (v1 < v2) 1 else 0
+					pc += 4
+				} else if (opcode == 8) {
+					val v1 = getValue(instruction, 0, pc, program)
+					val v2 = getValue(instruction, 1, pc, program)
+					val dest = program[pc + 3]
+					program[dest] = if (v1 == v2) 1 else 0
+					pc += 4
+				} else {
+					throw RuntimeException("Illegal Instruction ${opcode}")
+				}
 			}
+			throw RuntimeException("Program terminated without output ..")
 		}
-		throw RuntimeException("Program terminated without output ..")
 	}
 
 	private fun runSequence(program: List<Int>,
 							phaseSettings: List<Int>) : Int {
 		var lastOutput = 0
 		for (phaseSetting in phaseSettings) {
-			lastOutput = runProgram(program.toMutableList(), arrayOf(phaseSetting, lastOutput).iterator())
+			val program = Program(program.toMutableList())
+			lastOutput = program.run(arrayOf(phaseSetting, lastOutput).iterator())
 		}
 		println("Output: ${phaseSettings}: ${lastOutput} ..")
 		return lastOutput
+	}
+
+	private fun runWithFeedBack(program: List<Int>,
+								phaseSettings: List<Int>) : Int {
+		val programs = phaseSettings.map { Program(program.toMutableList()) }.toList()
+		var lastOutput = 0
+		for (i in 0 until phaseSettings.size) {
+			lastOutput = programs[i].run( arrayOf(phaseSettings[i], lastOutput).iterator() )
+		}
+
+		while (true) {
+			for (i in 0 until phaseSettings.size) {
+				val extraOutput = programs[i].run(arrayOf(lastOutput).iterator())
+				if (extraOutput == -1) {
+					return lastOutput
+				}
+				lastOutput = extraOutput
+			}
+			println("Finished ${phaseSettings} final output:  ${lastOutput} ..")
+		}
 	}
 
 
@@ -111,6 +133,8 @@ class Aoc2019ApplicationDay07 : CommandLineRunner {
 			it.forEach { line ->
 				val program = line.split(",").map { it.toInt() }.toList()
 				println("Max output ${permute((0..4).toList()).map { runSequence(program, it) }.max()} ..")
+
+				println("Max output with feedback ${permute((5..9).toList()).map { runWithFeedBack(program, it) }.max()} ..")
 			}
 		}
 	}
