@@ -6,6 +6,8 @@ import org.springframework.boot.runApplication
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import kotlin.collections.ArrayList
+import kotlin.math.max
+import kotlin.math.min
 
 @SpringBootApplication
 class Aoc2019ApplicationDay10 : CommandLineRunner {
@@ -15,7 +17,7 @@ class Aoc2019ApplicationDay10 : CommandLineRunner {
 
 	data class Asteroid(val point: Point)
 
-	class AstroidField(val rawField: List<String>) {
+	class AstroidField(rawField: List<String>) {
 
 		private val astroids : MutableList<Asteroid> = ArrayList()
 
@@ -42,19 +44,63 @@ class Aoc2019ApplicationDay10 : CommandLineRunner {
 		fun numberViewAbleInLine(asteroid: Asteroid,
 								 dx: Int,
 								 dy: Int) : Int {
-			var viewable = 0
-			var currentPoint = asteroid.point
-			var nextPoint = Point(currentPoint.x + dx, currentPoint.x + dy)
-			while (!occupied.contains(nextPoint)
-					&& (nextPoint.x >= 0 && nextPoint.x <= maxX)
+			var nextPoint = Point(asteroid.point.x +dx,  asteroid.point.y +dy)
+			while ((nextPoint.x >= 0 && nextPoint.x <= maxX)
 					&& (nextPoint.y >= 0 && nextPoint.y <= maxY)) {
-				viewable++
+				if (occupied.contains(nextPoint)) {
+					return 1
+				}
+				nextPoint = Point(nextPoint.x + dx, nextPoint.y + dy)
 			}
-			return viewable
+			return 0
+		}
+
+		private fun subSummedBy(dx : Int, dy : Int, exploredVector: Pair<Int,Int>) : Boolean {
+			// Yes I'm that tired and lazy
+			val myMax = listOf(dx, dy, exploredVector.first, exploredVector.second).max()!! + 1
+			for (i in 1 until myMax) {
+				if ((dx * i == exploredVector.first && dy * i == exploredVector.second)
+					|| (dx == exploredVector.first * i && dy == exploredVector.second * i)) {
+					return true
+				}
+			}
+			return false
 		}
 
 		fun getLargestNumberOfViewable() : Int {
-
+			val dxs = 0 until maxX
+			val dys = 0 until maxY
+			val combinations = sequence {
+				val exploredVectors = ArrayList<Pair<Int, Int>>()
+				for (dx in dxs) {
+					for (dy in dys) {
+						if ((dx == 0 && dy == 0)
+							 || exploredVectors.filter {subSummedBy(dx,dy, it) }.isNotEmpty()) {
+							continue
+						}
+						exploredVectors.add(Pair(dx, dy))
+						if (dx == 0) {
+							yield(Pair(dx, dy))
+							yield(Pair(dx, -dy))
+						} else if (dy == 0) {
+							yield(Pair(dx, dy))
+							yield(Pair(-dx, dy))
+						} else {
+							yield(Pair(dx, dy))
+							yield(Pair(-dx, dy))
+							yield(Pair(dx, -dy))
+							yield(Pair(-dx, -dy))
+						}
+					}
+				}
+			}.filter { it.first != 0 || it.second != 0 } /// Otherwise we will be standing still
+			return astroids.map { asteroid ->
+				                  val res = combinations.map {
+									numberViewAbleInLine(asteroid,
+														  it.first,
+														  it.second) }.sum()!!
+								  res
+			                    }.max()!!
 		}
 	}
 
