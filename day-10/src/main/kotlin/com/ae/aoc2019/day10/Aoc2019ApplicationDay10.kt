@@ -66,8 +66,9 @@ class Aoc2019ApplicationDay10 : CommandLineRunner {
 				rawField.add(line.trim())
 			}
 		}
-		val asteroidFiled = AstroidField(rawField)
+		val asteroidField = AstroidField(rawField)
 		for (line in rawField) println("|${line}|");
+		println("The max meteors visible his ${asteroidField.getLargestNumberOfViewable()}")
 	}
 }
 
