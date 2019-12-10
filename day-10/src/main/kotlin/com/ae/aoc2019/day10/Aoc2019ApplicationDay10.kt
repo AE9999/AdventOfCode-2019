@@ -67,7 +67,7 @@ class Aoc2019ApplicationDay10 : CommandLineRunner {
 			return false
 		}
 
-		fun getLargestNumberOfViewable() : Int {
+		fun getLargestNumberOfViewable() : Pair<Asteroid, Int> {
 			val dxs = 0 until maxX
 			val dys = 0 until maxY
 			val combinations = sequence {
@@ -95,13 +95,27 @@ class Aoc2019ApplicationDay10 : CommandLineRunner {
 				}
 			}.filter { it.first != 0 || it.second != 0 } /// Otherwise we will be standing still
 			return astroids.map { asteroid ->
-				                  val res = combinations.map {
-									numberViewAbleInLine(asteroid,
-														  it.first,
-														  it.second) }.sum()!!
+				                  val res = Pair(asteroid,
+										         combinations.map {
+																	numberViewAbleInLine(asteroid,
+																						  it.first,
+																						  it.second) }.sum()!!)
 								  res
-			                    }.max()!!
+			                    }.sortedByDescending { it.second }.first()
 		}
+	}
+
+	// From the example
+	fun doLaserStuff() {
+//		1) 0,4 => 0,1
+//		2) 1,4 => 1,4
+//		3) 1,3 => 1,3
+//		4) 2,4 => 1,2
+//		5) 1,1 => 1,1
+//		6) 3,2 => 3,2
+//		7) 3,3 => 1,1
+//		8) 2,1 => 2,1
+//		9) 7,2 => 7,2
 	}
 
 	override fun run(vararg args: String?) {
