@@ -135,25 +135,25 @@ class Aoc2019ApplicationDay11 : CommandLineRunner {
 
 				when(direction) {
 					Direction.UP -> {
-						direction = if (output[0] == BigInteger.ZERO) // Left
+						direction = if (output[1] == BigInteger.ZERO) // Left
 										Direction.LEFT
 							        else // Right
 										Direction.RIGHT
 					}
 					Direction.DOWN -> {
-						direction = if (output[0] == BigInteger.ZERO) // Left
+						direction = if (output[1] == BigInteger.ZERO) // Left
 										Direction.RIGHT
 									else // Right
 										Direction.LEFT
 					}
 					Direction.LEFT -> {
-						direction = if (output[0] == BigInteger.ZERO) // Left
+						direction = if (output[1] == BigInteger.ZERO) // Left
 										Direction.DOWN
 									else // Right
 										Direction.UP
 					}
 					Direction.RIGHT -> {
-						direction = if (output[0] == BigInteger.ZERO) // Left
+						direction = if (output[1] == BigInteger.ZERO) // Left
 										Direction.UP
 									else // Right
 										Direction.DOWN
@@ -173,16 +173,35 @@ class Aoc2019ApplicationDay11 : CommandLineRunner {
 			it.forEach { line ->
 				val rawProgram = line.split(',')
 				val programMem = HashMap<BigInteger, BigInteger>().withDefault { BigInteger.ZERO }
-				val panel : MutableMap<Point, BigInteger> = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
 				for (i in 0 until rawProgram.size) {
 					programMem[i.toBigInteger()] = BigInteger(rawProgram[i])
 				}
+				var panel : MutableMap<Point, BigInteger>;
 				var robot : Robot
-				robot = Robot(programMem.toMutableMap(), panel)
+
+				panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
+				robot = Robot(programMem.toMutableMap().withDefault { BigInteger.ZERO }, panel)
+				println("My robot painted ${robot.paintStuff()} squares ..")
+
+
+				panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
+				panel[Point(0,0)] = BigInteger.ONE
+				robot = Robot(programMem.toMutableMap().withDefault { BigInteger.ZERO }, panel)
 				robot.paintStuff()
+
+				val maxX: Int = panel.keys.map { it.x }.max()!!
+				val minX: Int = panel.keys.map { it.x }.min()!!
+				val maxY: Int = panel.keys.map { it.y }.max()!!
+				val minY: Int = panel.keys.map { it.y }.min()!!
+
+				for(y in ((minY-1)..(maxY+1)).reversed() ) { // Sure why not reversed.
+					for (x in (minX-1)..(maxX+1)) {
+						print(if (panel.getValue(Point(x,y))  == BigInteger.ZERO) '.'  else '#')
+					}
+					print("\n")
+				}
 			}
 		}
-
 	}
 }
 
