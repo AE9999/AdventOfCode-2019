@@ -107,15 +107,7 @@ class Aoc2019ApplicationDay10 : CommandLineRunner {
 
 	// From the example
 	fun doLaserStuff() {
-//		1) 0,4 => 0,1
-//		2) 1,4 => 1,4
-//		3) 1,3 => 1,3
-//		4) 2,4 => 1,2
-//		5) 1,1 => 1,1
-//		6) 3,2 => 3,2
-//		7) 3,3 => 1,1
-//		8) 2,1 => 2,1
-//		9) 7,2 => 7,2
+
 	}
 
 	override fun run(vararg args: String?) {
