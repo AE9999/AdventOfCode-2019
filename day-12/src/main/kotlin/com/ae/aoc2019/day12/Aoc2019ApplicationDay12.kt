@@ -6,9 +6,9 @@ import org.springframework.boot.runApplication
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.RuntimeException
-import java.math.BigInteger
 import kotlin.collections.ArrayList
 import kotlin.math.absoluteValue
+import kotlin.math.min
 
 @SpringBootApplication
 class Aoc2019ApplicationDay12 : CommandLineRunner {
@@ -46,13 +46,46 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			return x.absoluteValue + y.absoluteValue + z.absoluteValue
 		}
 
+		fun min() : Int {
+			return Math.min(Math.min(x,y), z)
+		}
 
+		fun max() : Int {
+			return Math.max(Math.max(x,y), z)
+		}
+
+		fun aligned(other: MyVec): Boolean {
+			(0..2).forEach {
+				if (other[it] == 0 && this[it] == 0) {}
+				else if (other[it] != 0 && this[it] == 0) return false
+				else if (other[it] == 0 && this[it] != 0) return false
+				else if (other[it]  > 0 !=  this[it] > 0) return false
+			}
+			return true
+		}
+
+		override fun equals(other: Any?): Boolean {
+			if (this === other) return true
+			if (javaClass != other?.javaClass) return false
+
+			other as MyVec
+
+			if (x != other.x) return false
+			if (y != other.y) return false
+			if (z != other.z) return false
+
+			return true
+		}
+
+		operator fun plus(other: MyVec): MyVec {
+			return MyVec(x + other.x, y + other.y, z + other.z)
+		}
 	}
 
 	class Moon(var position: MyVec,
 			   var speed: MyVec) {
 		fun update() {
-			position += speed
+			position = position.plus(speed)
 		}
 
 		fun potentialEnergy() : Int {
@@ -75,10 +108,14 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 	class System(val moons: List<Moon>) {
 
 		fun pairs() : Sequence<Pair<Moon, Moon>> {
+			return indexPairs().map { Pair(moons[it.first], moons[it.second]) }
+		}
+
+		fun indexPairs() : Sequence<Pair<Int, Int>> {
 			return sequence {
 				for (i in 0 until moons.size) {
 					for (j in i + 1 until moons.size) {
-						yield(Pair(moons[i], moons[j]))
+						yield(Pair(i, j))
 					}
 				}
 			}
@@ -94,6 +131,51 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			moons.forEach { it.update() }
 		}
 
+		fun extrapolatedDiff() : Boolean {
+			data class DiffEntry(val diff: MyVec, val duration: Int)
+
+			val diffEntries : Array<DiffEntry?> = arrayOfNulls(moons.size)
+			indexPairs().forEach {
+				val left = moons[it.first]
+				val right = moons[it.second]
+				val diffLeft = MyVec()
+				val durationLeft =  MyVec()
+				val diffRight =  MyVec()
+				val durationRight =  MyVec()
+				for (i in 0..2) {
+					diffLeft[i] = Integer.compare(right.position[i], left.position[i])
+					durationLeft[i] = (right.position[i] - left.position[i]).absoluteValue
+					diffRight[i] = Integer.compare(left.position[i], right.position[i])
+					durationRight[i] = (right.position[i] - left.position[i]).absoluteValue
+				}
+				if (diffEntries[it.first] == null) {
+					diffEntries[it.first] = DiffEntry(diffLeft, durationLeft.min())
+				}  else {
+					val diffEntry = diffEntries[it.first]!!
+					if (!diffEntry.diff.aligned(diffLeft)) {
+						return false
+					}
+					diffEntries[it.first] = DiffEntry(diffLeft + diffEntry.diff, min(diffEntry.duration, durationLeft.min()))
+				}
+				if (diffEntries[it.second] == null) {
+					diffEntries[it.second] = DiffEntry(diffRight, durationRight.min())
+				} else {
+					val diffEntry = diffEntries[it.second]!!
+					if (!diffEntry.diff.aligned(diffRight)) {
+						return false
+					}
+					diffEntries[it.second] = DiffEntry(diffRight+ diffEntry.diff, min(diffEntry.duration, durationRight.min()) )
+				}
+			}
+			val vectors = diffEntries.map { it!!.diff }
+			val duration  =  diffEntries.map { it!!.duration }.min()!!
+			for (i in moons.size) {
+				moons[i]
+			}
+
+			return true
+		}
+
 		fun totalEnergy() : Int {
 			return moons.map { it.totalEnergy() }.sum()
 		}
@@ -103,22 +185,19 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 				println(moon)
 			}
 		}
-
-
 	}
 
-	override fun run(vararg args: String?) {
+	fun part1(vararg args: String?) {
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay12::class.java.getResourceAsStream(args[0]!!)))
 		val moons = ArrayList<Moon>()
-
 		bufferedReader.useLines {
 			val regex = Regex(pattern = """-?\d+""")
 			it.forEach { line ->
 				val matchResult = regex.findAll(line).iterator()
 				moons.add(Moon(MyVec(matchResult.next().value.toInt(),
-						             matchResult.next().value.toInt(),
-						             matchResult.next().value.toInt()),
-						       MyVec()))
+						matchResult.next().value.toInt(),
+						matchResult.next().value.toInt()),
+						MyVec()))
 
 			}
 		}
@@ -131,6 +210,34 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			system.print()
 		}
 		println("Sum of total energy: ${system.totalEnergy()} ..")
+	}
+
+	fun part2(vararg args: String?) {
+		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay12::class.java.getResourceAsStream(args[0]!!)))
+		val moons = ArrayList<Moon>()
+		bufferedReader.useLines {
+			val regex = Regex(pattern = """-?\d+""")
+			it.forEach { line ->
+				val matchResult = regex.findAll(line).iterator()
+				moons.add(Moon(MyVec(matchResult.next().value.toInt(),
+						matchResult.next().value.toInt(),
+						matchResult.next().value.toInt()),
+						MyVec()))
+
+			}
+		}
+		val system = System(moons)
+		system.step()
+		while() {
+			if (!system.extrapolatedDiff()) system.step()
+		}
+
+	}
+
+	override fun run(vararg args: String?) {
+		part1(*args)
+		part2(*args)
+
 	}
 }
 
