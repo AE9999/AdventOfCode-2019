@@ -5,17 +5,20 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.lang.IllegalStateException
 import java.lang.RuntimeException
 import java.math.BigInteger
-import java.util.function.Consumer
 import kotlin.collections.ArrayList
-import kotlin.math.absoluteValue
-import kotlin.math.min
 
 @SpringBootApplication
 class Aoc2019ApplicationDay13 : CommandLineRunner {
 
 	data class Point(val x : Int,  val y : Int)
+
+	val zero = BigInteger.ZERO
+	val one = BigInteger.ONE
+	val minusOne = (-1).toBigInteger()
+	val programMem = HashMap<BigInteger, BigInteger>().withDefault { BigInteger.ZERO }
 
 	class Arcade(val programMem: MutableMap<BigInteger, BigInteger>) {
 
@@ -45,7 +48,7 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 			}
 		}
 
-		fun run(inputs: Iterator<BigInteger>) : List<BigInteger> {
+		fun run(inputs: Iterator<BigInteger>) : List<BigInteger>? {
 			val rvalue = ArrayList<BigInteger>()
 			while (true) {
 				val instruction = programMem[pc].toString().padStart(5, '0')
@@ -66,12 +69,10 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 					pc += 4.toBigInteger()
 				} else if (opcode == 3) {
 					val v1 = getDestination(instruction, 0)
-					try {
-						programMem[v1] = inputs.next()
-					} catch (e : NoSuchElementException) {
-						System.out.println("Ran out of input.")
-						return rvalue
+					if (!inputs.hasNext()) {
+						return null
 					}
+					programMem[v1] = inputs.next()
 					pc += 2.toBigInteger()
 				} else if (opcode == 4) {
 					val v1 = readMem(instruction, 0)
@@ -125,15 +126,12 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 
 	fun printOutput(output: List<BigInteger>) {
 		print("\n\n")
-		println("Still ${output.chunked(3).filter { it[2].toInt() == 2 }.size} block titles remaining.")
-
 		val panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
-		var score = BigInteger.ZERO
+		var rocks = 0
 		output.chunked(3).forEach {
-			if (it[0] == (-1).toBigInteger()) {
-				score = it[2]
-			} else {
+			if (it[0] != (-1).toBigInteger()) {
 				panel[Point(it[0].toInt(), it[1].toInt())] = it[2]
+				if (it[2].toInt() == 2) rocks++
 			}
 		}
 
@@ -141,58 +139,159 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 		val minX: Int = panel.keys.map { it.x }.min()!!
 		val maxY: Int = panel.keys.map { it.y }.max()!!
 		val minY: Int = panel.keys.map { it.y }.min()!!
-
+		var paintedRocks = 0
 		for(y in ((minY-1)..(maxY+1)).reversed() ) { // Sure why not reversed.
 			for (x in (minX-1)..(maxX+1)) {
-				print(intToChar(panel.getValue(Point(x,y))))
+				val char = intToChar(panel.getValue(Point(x,y)))
+				if (char == "X") {
+					paintedRocks++
+				}
+				print(char)
 			}
 			print("\n")
 		}
+		println("Rocks: $rocks, Painted Rocker $paintedRocks ..")
 	}
+
+//	data class GameState(remainingRocks: Int,
+//
+//						 )
+	data class OutputAnalysis(val score: BigInteger?,
+							  val paintedRocks: Int,
+							  val ballLocation: Point?,
+							  val barLocation: Point?,
+							  val maxX: Int,
+							  val minX: Int,
+							  val maxY: Int,
+							  val minY: Int)
+
+	fun analyseOutput(output: List<BigInteger>) : OutputAnalysis {
+		val panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
+		var score: BigInteger? = null
+		var ballLocation: Point? = null
+		var barLocation: Point? = null
+		output.chunked(3).forEach {
+			if (it[0] != (-1).toBigInteger()) {
+				panel[Point(it[0].toInt(), it[1].toInt())] = it[2]
+			} else {
+				score = it[2]
+			}
+		}
+
+		val maxX: Int = panel.keys.map { it.x }.max()!!
+		val minX: Int = panel.keys.map { it.x }.min()!!
+		val maxY: Int = panel.keys.map { it.y }.max()!!
+		val minY: Int = panel.keys.map { it.y }.min()!!
+		var paintedRocks = 0
+		for(y in ((minY-1)..(maxY+1)).reversed() ) { // Sure why not reversed.
+			for (x in (minX-1)..(maxX+1)) {
+				val point = Point(x,y)
+				val char = intToChar(panel.getValue(point))
+				if (char == "X") {
+					paintedRocks++
+				}
+				if (char == "=") {
+					barLocation = point
+				}
+				if (char == "o") {
+					ballLocation = point
+				}
+			}
+		}
+
+		return OutputAnalysis(score,
+				              paintedRocks,
+				              ballLocation,
+				              barLocation,
+							  maxX,
+							  minX,
+							  maxY,
+							  minY)
+
+	}
+
+	fun runIntput(input: Iterator<BigInteger>) : List<BigInteger>? {
+		val arcade = Arcade(programMem.toMutableMap().withDefault { BigInteger.ZERO })
+		return arcade.run(input)
+	}
+
+	fun getNextViable(windowSize: Int, outputAnalysis: OutputAnalysis) : List<BigInteger>? {
+		// Try going more to the left
+		for (amountLeft in 1 .. outputAnalysis.barLocation!!.x) {
+			if (amountLeft >= windowSize) { continue }
+			val baseInput = (0 until (windowSize - amountLeft)).map { zero }.toMutableList()
+			val lefts = (0 until amountLeft).map { minusOne }
+			baseInput.addAll(lefts)
+			val output = runIntput(baseInput.iterator()) ?: return baseInput
+			printOutput(output!!)
+
+		}
+
+		// Try going more to the right
+		for (amountRight in 1..outputAnalysis.maxX) {
+			if (amountRight >= windowSize) { continue }
+			val baseInput = (0 until (windowSize - amountRight)).map { zero }.toMutableList()
+			val rights = (0 until amountRight).map { one }
+			baseInput.addAll(rights)
+			val output = runIntput(baseInput.iterator())
+			if (output == null)  {
+				return baseInput
+			}
+			printOutput(output!!)
+		}
+
+		return null
+	}
+
 
 	override fun run(vararg args: String?) {
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay13::class.java.getResourceAsStream(args[0]!!)))
 		bufferedReader.useLines {
 			it.forEach { line ->
 				val rawProgram = line.split(',')
-				val programMem = HashMap<BigInteger, BigInteger>().withDefault { BigInteger.ZERO }
 				for (i in 0 until rawProgram.size) {
 					programMem[i.toBigInteger()] = BigInteger(rawProgram[i])
 				}
-
-
 				var arcade: Arcade
-				var output: List<BigInteger>
+				var output: List<BigInteger>?
 
 				arcade = Arcade(programMem.toMutableMap().withDefault { BigInteger.ZERO })
 				output = arcade.run(listOf(BigInteger.ZERO).iterator())
-				printOutput(output)
+				printOutput(output!!)
 
 				programMem[BigInteger.ZERO] = 2.toBigInteger()
+				val knownCorrectInputs = ArrayList<List<BigInteger>>()
 
+				output = null
 
-				arcade = Arcade(programMem.toMutableMap().withDefault { BigInteger.ZERO })
+				while (true) {
+					var input = ArrayList<BigInteger>()
+					knownCorrectInputs.forEach { input.addAll(it) }
 
-				val minusOne = (-1).toBigInteger()
-				val one = BigInteger.ONE
-				val commands = listOf(one, one, minusOne, minusOne)
-				val input = object : Iterator<BigInteger> {
-					var index = 0
-
-					override fun hasNext(): Boolean {
-						return true
+					var newInput = ArrayList<BigInteger>()
+					while (output == null) {
+						newInput.add(zero)
+						val currentInput = input.toMutableList()
+						currentInput.addAll(newInput)
+						output = runIntput(currentInput.iterator())
 					}
 
-					override fun next(): BigInteger {
-						if (index < commands.size) {
-							return commands[index++]
-						}
-						return BigInteger.ZERO
+					// We died. Figuring out how to prevent it
+					val outputAnalysis = analyseOutput(output)
+					val windowSize = newInput.size
+					println("Score: ${outputAnalysis.score
+							?: "X"} remainingRocks: $outputAnalysis.remainingRocks , inputs ${windowSize}..")
+					printOutput(output!!)
+
+					val knownCorrectInput = getNextViable(windowSize, outputAnalysis)
+					if (knownCorrectInput == null) {
+						throw IllegalStateException("We are fucked now ..")
 					}
+
+					// Start using better ideas ..
+
+					knownCorrectInputs.add(knownCorrectInput)
 				}
-
-				output = arcade.run(input)
-				printOutput(output)
 			}
 		}
 	}
