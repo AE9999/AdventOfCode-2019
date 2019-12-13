@@ -65,7 +65,12 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 					pc += 4.toBigInteger()
 				} else if (opcode == 3) {
 					val v1 = getDestination(instruction, 0)
-					programMem[v1] = inputs.next()
+					try {
+						programMem[v1] = inputs.next()
+					} catch (e : NoSuchElementException) {
+						System.out.println("Ran out of input.")
+						return rvalue
+					}
 					pc += 2.toBigInteger()
 				} else if (opcode == 4) {
 					val v1 = readMem(instruction, 0)
@@ -127,12 +132,34 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 					programMem[i.toBigInteger()] = BigInteger(rawProgram[i])
 				}
 
-				val panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
-				val arcade = Arcade(programMem.toMutableMap().withDefault { BigInteger.ZERO })
-				val output = arcade.run(listOf<BigInteger>().iterator())
+				var panel: MutableMap<Point, BigInteger>
+				var arcade: Arcade
+				var output: List<BigInteger>
+				var score: BigInteger
 
+				panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
+				arcade = Arcade(programMem.toMutableMap().withDefault { BigInteger.ZERO })
+				output = arcade.run(listOf(BigInteger.ZERO).iterator())
+				println("Read ${output.chunked(3).filter { it[2].toInt() == 2 }.size} block titles.")
+
+				programMem[BigInteger.ZERO] = 2.toBigInteger()
+
+
+				panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
+				arcade = Arcade(programMem.toMutableMap().withDefault { BigInteger.ZERO })
+
+//				val myInput = Iterator<BigInteger>() {
+//
+//				}
+				output = arcade.run(listOf(BigInteger.ZERO).iterator())
+
+				score = BigInteger.ZERO
 				output.chunked(3).forEach {
-					panel[Point(it[0].toInt(), it[1].toInt())] = it[2]
+					if (it[0] == (-1).toBigInteger()) {
+						score = it[2]
+					} else {
+						panel[Point(it[0].toInt(), it[1].toInt())] = it[2]
+					}
 				}
 
 				val maxX: Int = panel.keys.map { it.x }.max()!!
@@ -146,8 +173,6 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 					}
 					print("\n")
 				}
-
-				println("Read ${output.chunked(3).filter { it[2].toInt() == 2 }.size} block titles.")
 			}
 		}
 	}
