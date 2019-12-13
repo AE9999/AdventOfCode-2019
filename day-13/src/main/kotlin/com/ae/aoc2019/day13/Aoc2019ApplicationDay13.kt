@@ -218,18 +218,21 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 	fun getNextViable(windowSize: Int, outputAnalysis: OutputAnalysis) : List<BigInteger>? {
 		// Try going more to the left
 		for (amountLeft in 1 .. outputAnalysis.barLocation!!.x) {
-			if (amountLeft >= windowSize) { continue }
+			if (amountLeft > windowSize) { continue }
 			val baseInput = (0 until (windowSize - amountLeft)).map { zero }.toMutableList()
 			val lefts = (0 until amountLeft).map { minusOne }
 			baseInput.addAll(lefts)
-			val output = runIntput(baseInput.iterator()) ?: return baseInput
+			val output = runIntput(baseInput.iterator())
+			if (output == null)  {
+				return baseInput
+			}
 			printOutput(output!!)
 
 		}
 
 		// Try going more to the right
 		for (amountRight in 1..outputAnalysis.maxX) {
-			if (amountRight >= windowSize) { continue }
+			if (amountRight > windowSize) { continue }
 			val baseInput = (0 until (windowSize - amountRight)).map { zero }.toMutableList()
 			val rights = (0 until amountRight).map { one }
 			baseInput.addAll(rights)
@@ -262,9 +265,8 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 				programMem[BigInteger.ZERO] = 2.toBigInteger()
 				val knownCorrectInputs = ArrayList<List<BigInteger>>()
 
-				output = null
-
 				while (true) {
+					output = null
 					var input = ArrayList<BigInteger>()
 					knownCorrectInputs.forEach { input.addAll(it) }
 
@@ -279,9 +281,6 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 					// We died. Figuring out how to prevent it
 					val outputAnalysis = analyseOutput(output)
 					val windowSize = newInput.size
-					println("Score: ${outputAnalysis.score
-							?: "X"} remainingRocks: $outputAnalysis.remainingRocks , inputs ${windowSize}..")
-					printOutput(output!!)
 
 					val knownCorrectInput = getNextViable(windowSize, outputAnalysis)
 					if (knownCorrectInput == null) {
