@@ -6,6 +6,7 @@ import org.springframework.boot.runApplication
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.RuntimeException
+import java.math.BigInteger
 import kotlin.collections.ArrayList
 import kotlin.math.absoluteValue
 import kotlin.math.min
@@ -86,6 +87,9 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 		}
 	}
 
+	data class DiffEntry(val diff: MyVec,
+						 val duration: Int)
+
 	class Moon(var position: MyVec,
 			   var speed: MyVec) {
 
@@ -101,8 +105,21 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			position = position.plus(speed)
 		}
 
-		fun updateWithDiff(diff: MyVec, amount: Int) {
+		fun doEulerStuff(base: Int, duration : Int) : Int {
+			val sign = if (base >= 0) 1 else -1
+			return (((base.absoluteValue + duration) * duration) / 2) * sign
+		}
 
+		fun updateWithDiffAndDuration(diff: MyVec, duration: Int) {
+			// Fix this ..
+			val newSpeed = MyVec(speed.x + doEulerStuff(diff.x, duration),
+					               speed.y +doEulerStuff(diff.y, duration),
+					               speed.z + doEulerStuff(diff.z, duration))
+			val pDifference = MyVec(doEulerStuff(speed.x, duration),
+					                doEulerStuff(speed.y, duration),
+					                doEulerStuff(speed.z, duration))
+			position = position.plus(pDifference)
+			speed = newSpeed
 		}
 
 		fun potentialEnergy() : Int {
@@ -128,7 +145,7 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 
 	class System(val moons: List<Moon>) {
 
-		var madeSteps = 0
+		var madeSteps = BigInteger.ZERO
 
 		fun pairs() : Sequence<Pair<Moon, Moon>> {
 			return indexPairs().map { Pair(moons[it.first], moons[it.second]) }
@@ -155,8 +172,22 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			madeSteps++
 		}
 
+		fun doEulerStuff(base: Int, amount : Int) : Int {
+			return ((base + amount) * amount) / 2
+		}
+
+		fun getDuration(distance: Int, currentSpeed : Int, d: Int) : Int {
+			if (d == 0) {
+				return Integer.MAX_VALUE
+			}
+			var duration = 1
+			while (doEulerStuff(currentSpeed, duration)  < distance) {
+				duration++
+			}
+			return duration
+		}
+
 		fun extrapolatedStep() : Boolean {
-			data class DiffEntry(val diff: MyVec, val duration: Int)
 
 			val diffEntries : Array<DiffEntry?> = arrayOfNulls(moons.size)
 			indexPairs().forEach {
@@ -167,10 +198,15 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 				val diffRight =  MyVec()
 				val durationRight =  MyVec()
 				for (i in 0..2) {
-					diffLeft[i] = Integer.compare(right.position[i], left.position[i])
-					durationLeft[i] = (right.position[i] - left.position[i]).absoluteValue
-					diffRight[i] = Integer.compare(left.position[i], right.position[i])
-					durationRight[i] = (right.position[i] - left.position[i]).absoluteValue
+					val deltaLeft = Integer.compare(right.position[i], left.position[i])
+					val distanceLeft = (right.position[i] - left.position[i]).absoluteValue
+					diffLeft[i] = deltaLeft
+					durationLeft[i] = getDuration(distanceLeft, left.speed[i], deltaLeft)
+
+					val deltaRight = Integer.compare(left.position[i], right.position[i])
+					val distanceRight = (right.position[i] - left.position[i]).absoluteValue
+					diffRight[i] = deltaRight
+					durationRight[i] = getDuration(distanceRight, right.speed[i], deltaRight)
 				}
 				if (diffEntries[it.first] == null) {
 					diffEntries[it.first] = DiffEntry(diffLeft, durationLeft.min())
@@ -194,10 +230,10 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			val vectors = diffEntries.map { it!!.diff }
 			val duration  =  diffEntries.map { it!!.duration }.min()!!
 			for (i in 0 until moons.size) {
-				moons[i].updateWithDiff(vectors[i], duration)
+				moons[i].updateWithDiffAndDuration(vectors[i], duration)
 			}
 
-			madeSteps += 1 // Wrong
+			madeSteps += duration.toBigInteger() // Wrong
 			return true
 		}
 
@@ -211,7 +247,7 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			}
 		}
 
-		fun nSteps(): Int {
+		fun nSteps(): BigInteger {
 			return madeSteps
 		}
 
@@ -228,9 +264,9 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			it.forEach { line ->
 				val matchResult = regex.findAll(line).iterator()
 				moons.add(Moon(MyVec(matchResult.next().value.toInt(),
-						matchResult.next().value.toInt(),
-						matchResult.next().value.toInt()),
-						MyVec()))
+									 matchResult.next().value.toInt(),
+									 matchResult.next().value.toInt()),
+									 MyVec()))
 
 			}
 		}
@@ -253,9 +289,9 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			it.forEach { line ->
 				val matchResult = regex.findAll(line).iterator()
 				moons.add(Moon(MyVec(matchResult.next().value.toInt(),
-						matchResult.next().value.toInt(),
-						matchResult.next().value.toInt()),
-						MyVec()))
+									 matchResult.next().value.toInt(),
+									 matchResult.next().value.toInt()),
+									 MyVec()))
 			}
 		}
 
