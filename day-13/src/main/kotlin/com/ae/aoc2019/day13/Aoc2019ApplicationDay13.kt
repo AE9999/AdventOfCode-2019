@@ -14,6 +14,8 @@ import kotlin.math.min
 @SpringBootApplication
 class Aoc2019ApplicationDay13 : CommandLineRunner {
 
+	data class Point(val x : Int,  val y : Int)
+
 	class Arcade(val programMem: MutableMap<BigInteger, BigInteger>) {
 
 		var pc : BigInteger = BigInteger.ZERO
@@ -42,7 +44,7 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 			}
 		}
 
-		private fun run(inputs: Iterator<BigInteger>) : List<BigInteger> {
+		fun run(inputs: Iterator<BigInteger>) : List<BigInteger> {
 			val rvalue = ArrayList<BigInteger>()
 			while (true) {
 				val instruction = programMem[pc].toString().padStart(5, '0')
@@ -69,9 +71,6 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 					val v1 = readMem(instruction, 0)
 					pc += 2.toBigInteger()
 					rvalue.add(v1)
-					if(rvalue.size == 2) {
-						return rvalue
-					}
 				} else if (opcode == 5) {
 					val v1 = readMem(instruction, 0).toInt()
 					if (v1 != 0)
@@ -107,9 +106,50 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 		}
 	}
 
+	fun intToChar(value: BigInteger) : String {
+		return when(value) {
+			BigInteger.ZERO -> "."
+			BigInteger.ONE -> "#"
+			2.toBigInteger() ->  "X"
+			3.toBigInteger() ->  "="
+			4.toBigInteger() ->  "o"
+			else -> throw RuntimeException("Illegal Char")
+		}
+	}
+
 	override fun run(vararg args: String?) {
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay13::class.java.getResourceAsStream(args[0]!!)))
+		bufferedReader.useLines {
+			it.forEach { line ->
+				val rawProgram = line.split(',')
+				val programMem = HashMap<BigInteger, BigInteger>().withDefault { BigInteger.ZERO }
+				for (i in 0 until rawProgram.size) {
+					programMem[i.toBigInteger()] = BigInteger(rawProgram[i])
+				}
 
+				val panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
+				val arcade = Arcade(programMem.toMutableMap().withDefault { BigInteger.ZERO })
+				val output = arcade.run(listOf<BigInteger>().iterator())
+
+				output.chunked(3).forEach {
+					panel[Point(it[0].toInt(), it[1].toInt())] = it[2]
+				}
+
+				val maxX: Int = panel.keys.map { it.x }.max()!!
+				val minX: Int = panel.keys.map { it.x }.min()!!
+				val maxY: Int = panel.keys.map { it.y }.max()!!
+				val minY: Int = panel.keys.map { it.y }.min()!!
+
+				for(y in ((minY-1)..(maxY+1)).reversed() ) { // Sure why not reversed.
+					for (x in (minX-1)..(maxX+1)) {
+						print(intToChar(panel.getValue(Point(x,y))))
+					}
+					print("\n")
+				}
+
+				println("Read ${output.chunked(3).filter { it[2].toInt() == 2 }.size} block titles.")
+			}
+		}
 	}
 }
 
