@@ -7,6 +7,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.RuntimeException
 import java.math.BigInteger
+import java.util.function.Consumer
 import kotlin.collections.ArrayList
 import kotlin.math.absoluteValue
 import kotlin.math.min
@@ -122,6 +123,33 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 		}
 	}
 
+	fun printOutput(output: List<BigInteger>) {
+		print("\n\n")
+		println("Still ${output.chunked(3).filter { it[2].toInt() == 2 }.size} block titles remaining.")
+
+		val panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
+		var score = BigInteger.ZERO
+		output.chunked(3).forEach {
+			if (it[0] == (-1).toBigInteger()) {
+				score = it[2]
+			} else {
+				panel[Point(it[0].toInt(), it[1].toInt())] = it[2]
+			}
+		}
+
+		val maxX: Int = panel.keys.map { it.x }.max()!!
+		val minX: Int = panel.keys.map { it.x }.min()!!
+		val maxY: Int = panel.keys.map { it.y }.max()!!
+		val minY: Int = panel.keys.map { it.y }.min()!!
+
+		for(y in ((minY-1)..(maxY+1)).reversed() ) { // Sure why not reversed.
+			for (x in (minX-1)..(maxX+1)) {
+				print(intToChar(panel.getValue(Point(x,y))))
+			}
+			print("\n")
+		}
+	}
+
 	override fun run(vararg args: String?) {
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay13::class.java.getResourceAsStream(args[0]!!)))
 		bufferedReader.useLines {
@@ -132,47 +160,39 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 					programMem[i.toBigInteger()] = BigInteger(rawProgram[i])
 				}
 
-				var panel: MutableMap<Point, BigInteger>
+
 				var arcade: Arcade
 				var output: List<BigInteger>
-				var score: BigInteger
 
-				panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
 				arcade = Arcade(programMem.toMutableMap().withDefault { BigInteger.ZERO })
 				output = arcade.run(listOf(BigInteger.ZERO).iterator())
-				println("Read ${output.chunked(3).filter { it[2].toInt() == 2 }.size} block titles.")
+				printOutput(output)
 
 				programMem[BigInteger.ZERO] = 2.toBigInteger()
 
 
-				panel = HashMap<Point, BigInteger>().withDefault { BigInteger.ZERO }
 				arcade = Arcade(programMem.toMutableMap().withDefault { BigInteger.ZERO })
 
-//				val myInput = Iterator<BigInteger>() {
-//
-//				}
-				output = arcade.run(listOf(BigInteger.ZERO).iterator())
+				val minusOne = (-1).toBigInteger()
+				val one = BigInteger.ONE
+				val commands = listOf(one, one, minusOne, minusOne)
+				val input = object : Iterator<BigInteger> {
+					var index = 0
 
-				score = BigInteger.ZERO
-				output.chunked(3).forEach {
-					if (it[0] == (-1).toBigInteger()) {
-						score = it[2]
-					} else {
-						panel[Point(it[0].toInt(), it[1].toInt())] = it[2]
+					override fun hasNext(): Boolean {
+						return true
+					}
+
+					override fun next(): BigInteger {
+						if (index < commands.size) {
+							return commands[index++]
+						}
+						return BigInteger.ZERO
 					}
 				}
 
-				val maxX: Int = panel.keys.map { it.x }.max()!!
-				val minX: Int = panel.keys.map { it.x }.min()!!
-				val maxY: Int = panel.keys.map { it.y }.max()!!
-				val minY: Int = panel.keys.map { it.y }.min()!!
-
-				for(y in ((minY-1)..(maxY+1)).reversed() ) { // Sure why not reversed.
-					for (x in (minX-1)..(maxX+1)) {
-						print(intToChar(panel.getValue(Point(x,y))))
-					}
-					print("\n")
-				}
+				output = arcade.run(input)
+				printOutput(output)
 			}
 		}
 	}
