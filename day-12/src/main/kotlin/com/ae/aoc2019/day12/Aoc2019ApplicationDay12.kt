@@ -80,12 +80,29 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 		operator fun plus(other: MyVec): MyVec {
 			return MyVec(x + other.x, y + other.y, z + other.z)
 		}
+
+		fun clone(): MyVec {
+			return MyVec(x, y, z)
+		}
 	}
 
 	class Moon(var position: MyVec,
 			   var speed: MyVec) {
+
+		val originalPosion: MyVec
+		val originalSpeed: MyVec
+
+		init {
+		    originalPosion = position.clone()
+			originalSpeed = MyVec()
+		}
+
 		fun update() {
 			position = position.plus(speed)
+		}
+
+		fun updateWithDiff(diff: MyVec, amount: Int) {
+
 		}
 
 		fun potentialEnergy() : Int {
@@ -103,9 +120,15 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 		override fun toString(): String {
 			return "Moon(position=$position, speed=$speed)"
 		}
+
+		fun inOriginalState(): Boolean {
+			return position == originalPosion && speed == originalSpeed
+		}
 	}
 
 	class System(val moons: List<Moon>) {
+
+		var madeSteps = 0
 
 		fun pairs() : Sequence<Pair<Moon, Moon>> {
 			return indexPairs().map { Pair(moons[it.first], moons[it.second]) }
@@ -129,9 +152,10 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 				}
 			}
 			moons.forEach { it.update() }
+			madeSteps++
 		}
 
-		fun extrapolatedDiff() : Boolean {
+		fun extrapolatedStep() : Boolean {
 			data class DiffEntry(val diff: MyVec, val duration: Int)
 
 			val diffEntries : Array<DiffEntry?> = arrayOfNulls(moons.size)
@@ -169,10 +193,11 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			}
 			val vectors = diffEntries.map { it!!.diff }
 			val duration  =  diffEntries.map { it!!.duration }.min()!!
-			for (i in moons.size) {
-				moons[i]
+			for (i in 0 until moons.size) {
+				moons[i].updateWithDiff(vectors[i], duration)
 			}
 
+			madeSteps += 1 // Wrong
 			return true
 		}
 
@@ -184,6 +209,14 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 			for (moon in moons) {
 				println(moon)
 			}
+		}
+
+		fun nSteps(): Int {
+			return madeSteps
+		}
+
+		fun inOriginalState(): Boolean {
+			return moons.filter { !it.inOriginalState() }.isEmpty()
 		}
 	}
 
@@ -223,15 +256,17 @@ class Aoc2019ApplicationDay12 : CommandLineRunner {
 						matchResult.next().value.toInt(),
 						matchResult.next().value.toInt()),
 						MyVec()))
-
 			}
 		}
+
 		val system = System(moons)
 		system.step()
-		while() {
-			if (!system.extrapolatedDiff()) system.step()
+		while (!system.inOriginalState()) {
+			if (!system.extrapolatedStep()) {
+				system.step()
+			}
 		}
-
+		println("Total steps: ${system.nSteps()} ..")
 	}
 
 	override fun run(vararg args: String?) {
