@@ -109,7 +109,7 @@ class Aoc2019ApplicationDay14 : CommandLineRunner {
 
 		var amountOreSpend : Long = 0
 		var createdFuel : Long = 0
-		var windingDown = false
+		var windingDown = true
 		var step: Long = 0
 		while(true) {
 			val oreCost = solve(fuelFormula, ingredient2Formula, reserves)
@@ -129,20 +129,21 @@ class Aoc2019ApplicationDay14 : CommandLineRunner {
 			step++
 
 			if (!windingDown) {
-				val phaseStart = pastStates.filter { it.reserves.equals(currentState.reserves) }.firstOrNull()
-				if (phaseStart != null) {
+				val similarPhaseEnding = pastStates.filter { it.reserves.equals(currentState.reserves) }.firstOrNull()
+				if (similarPhaseEnding != null) {
 					println("We returned to a state seen before ..")
 					println("Current ..")
 					printReserves(reserves)
 					println("Past one ..")
-					printReserves(phaseStart!!.reserves)
+					printReserves(similarPhaseEnding!!.reserves)
 					println("Starting extropalation ..")
 					// When did it occur
-					val phaseLenght = (currentState.step - phaseStart.step) + 1
-					val phaseOreCost = currentState.endingOreCost - phaseStart.startingOreCost
+					val phaseLenght = (currentState.step - similarPhaseEnding.step) + 1
+					val phaseOreCost = currentState.endingOreCost - similarPhaseEnding.startingOreCost
 					while (amountOreSpend + phaseOreCost <= 1000000000000L) {
 						amountOreSpend += phaseOreCost
 						createdFuel += phaseLenght
+						println("Expecting amountOreSpend:$amountOreSpend & createdFuel:$createdFuel .. ")
 					}
 					windingDown = true
 				}
