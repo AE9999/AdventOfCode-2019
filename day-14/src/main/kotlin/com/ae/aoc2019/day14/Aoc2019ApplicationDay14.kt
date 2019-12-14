@@ -15,6 +15,10 @@ class Aoc2019ApplicationDay14 : CommandLineRunner {
 
 	override fun run(vararg args: String?) {
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay14::class.java.getResourceAsStream(args[0]!!)))
+		bufferedReader.useLines {
+			it.forEach { line ->
+			}
+		}
 	}
 }
 
