@@ -153,9 +153,7 @@ class Aoc2019ApplicationDay13 : CommandLineRunner {
 		println("Rocks: $rocks, Painted Rocker $paintedRocks ..")
 	}
 
-//	data class GameState(remainingRocks: Int,
-//
-//						 )
+
 	data class OutputAnalysis(val score: BigInteger?,
 							  val paintedRocks: Int,
 							  val ballLocation: Point?,
