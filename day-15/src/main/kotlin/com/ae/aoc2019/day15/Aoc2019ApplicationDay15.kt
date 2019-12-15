@@ -240,32 +240,72 @@ class Aoc2019ApplicationDay15 : CommandLineRunner {
 		return visitedPoints
 	}
 
+	fun paintPanel(panel : Map<Point, BigInteger>) {
+		val maxX: Int = panel.keys.map { it.x }.max()!!
+		val minX: Int = panel.keys.map { it.x }.min()!!
+		val maxY: Int = panel.keys.map { it.y }.max()!!
+		val minY: Int = panel.keys.map { it.y }.min()!!
+
+		for(y in ((minY-1)..(maxY+1)) ) { // Sure why not reversed.
+			for (x in (minX-1)..(maxX+1)) {
+				val char = when(panel.getValue(Point(x,y))) {
+					wallOutput -> "#"
+					moveOutput -> "."
+					doneOutput -> "O"
+					else -> "?"
+				}
+				print(char)
+			}
+			print("\n")
+		}
+	}
+
+	data class FillEntry(val point: Point,
+					     val minute: Int)
+
+	fun calculateOxygenTime(panel : MutableMap<Point, BigInteger>) : Int {
+		val fillQueue = ArrayDeque<FillEntry>()
+		var maxtime = 0
+		fillQueue.push(FillEntry(panel.entries.filter { it.value == doneOutput }.first().key, maxtime))
+		while (fillQueue.isNotEmpty()) {
+			val fillentry = fillQueue.pop()
+			maxtime = Math.max(maxtime, fillentry.minute)
+			val up = fillentry.point.up()
+			if (panel[up] == moveOutput) {
+				panel[up] = doneOutput
+				fillQueue.add(FillEntry(up, maxtime + 1))
+			}
+			val down = fillentry.point.down()
+			if (panel[down] == moveOutput) {
+				panel[down] = doneOutput
+				fillQueue.add(FillEntry(down, maxtime + 1))
+			}
+			val right = fillentry.point.right()
+			if (panel[right] == moveOutput) {
+				panel[right] = doneOutput
+				fillQueue.add(FillEntry(right, maxtime + 1))
+			}
+			val left = fillentry.point.left()
+			if (panel[left] == moveOutput) {
+				panel[left] = doneOutput
+				fillQueue.add(FillEntry(left, maxtime + 1))
+
+			}
+		}
+		return maxtime
+	}
+
 	override fun run(vararg args: String?) {
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay15::class.java.getResourceAsStream(args[0]!!)))
 		bufferedReader.useLines {
 			it.forEach { line ->
 				val shortestPath = calculateShortesPath(line)
-				//println("Found ${shortestPath} (${shortestPath.size}) as the shortest path ")
+				println("Found ${shortestPath} (${shortestPath.size}) as the shortest path ")
 
 				val panel = exploreMap(line).toMutableMap().withDefault { (-1).toBigInteger() }
+				paintPanel(panel)
 
-				val maxX: Int = panel.keys.map { it.x }.max()!!
-				val minX: Int = panel.keys.map { it.x }.min()!!
-				val maxY: Int = panel.keys.map { it.y }.max()!!
-				val minY: Int = panel.keys.map { it.y }.min()!!
-
-				for(y in ((minY-1)..(maxY+1)) ) { // Sure why not reversed.
-					for (x in (minX-1)..(maxX+1)) {
-						val char = when(panel.getValue(Point(x,y))) {
-							wallOutput -> "#"
-							moveOutput -> "."
-							doneOutput -> "O"
-							else -> "?"
-						}
-						print(char)
-					}
-					print("\n")
-				}
+				println("This room is filled in ${calculateOxygenTime(panel)} minutes")
 			}
 		}
 	}
