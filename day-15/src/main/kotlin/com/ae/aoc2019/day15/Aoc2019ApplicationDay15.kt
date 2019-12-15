@@ -7,10 +7,23 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.RuntimeException
 import java.math.BigInteger
+import java.util.*
 import kotlin.collections.HashMap
 
 @SpringBootApplication
 class Aoc2019ApplicationDay15 : CommandLineRunner {
+
+	val north = BigInteger.ONE
+	val south = 2.toBigInteger()
+	val west = 3.toBigInteger()
+	val east = 4.toBigInteger()
+	val wallOutput = BigInteger.ZERO
+	val moveOutput = BigInteger.ONE
+	val doneOutput = 2.toBigInteger()
+	val noOuput = 99.toBigInteger()
+
+	val minusOne = (-1).toBigInteger()
+	val programMem = HashMap<BigInteger, BigInteger>().withDefault { BigInteger.ZERO }
 
 	class RepairDroid(val programMem: MutableMap<BigInteger, BigInteger>) {
 
@@ -40,7 +53,7 @@ class Aoc2019ApplicationDay15 : CommandLineRunner {
 			}
 		}
 
-		fun run(inputs: Iterator<BigInteger>) : List<BigInteger>? {
+		fun run(inputs: Iterator<BigInteger>) : List<BigInteger> {
 			val rvalue = ArrayList<BigInteger>()
 			while (true) {
 				val instruction = programMem[pc].toString().padStart(5, '0')
@@ -62,7 +75,7 @@ class Aoc2019ApplicationDay15 : CommandLineRunner {
 				} else if (opcode == 3) {
 					val v1 = getDestination(instruction, 0)
 					if (!inputs.hasNext()) {
-						return null
+						return rvalue
 					}
 					programMem[v1] = inputs.next()
 					pc += 2.toBigInteger()
@@ -105,9 +118,84 @@ class Aoc2019ApplicationDay15 : CommandLineRunner {
 		}
 	}
 
+	data class Point(val x : Int, val y: Int) {
+		fun up() : Point = Point(x, y+1)
+		fun down() : Point = Point(x, y - 1)
+		fun left() : Point = Point(x - 1, y)
+		fun right() : Point = Point(x  + 1, y)
+	}
+
+	data class SearchEntry(val point: Point,
+				           val inputSequence: List<BigInteger>)
+
+	fun calculateShortesPath(line: String) : List<BigInteger> {
+		val rawProgram = line.split(',')
+		for (i in 0 until rawProgram.size) {
+			programMem[i.toBigInteger()] = BigInteger(rawProgram[i])
+		}
+
+		val visitedPoints = HashSet<Point>()
+		val searchQueue = ArrayDeque<SearchEntry>()
+		searchQueue.push(SearchEntry(Point(0,0), listOf()))
+		while (searchQueue.isNotEmpty()) {
+
+			val searchEntry = searchQueue.pop()
+			if (visitedPoints.contains(searchEntry.point)) {
+				continue
+			}
+
+			visitedPoints.add(searchEntry.point)
+			val repairDroid = RepairDroid(programMem.toMutableMap())
+			val completeOutput = repairDroid.run(searchEntry.inputSequence.iterator())
+			val lastOutput : BigInteger = completeOutput.lastOrNull() ?: noOuput
+
+			if (lastOutput == wallOutput) {
+				continue
+			}
+
+			if (lastOutput == doneOutput) {
+				return searchEntry.inputSequence
+			}
+
+			val upPoint = searchEntry.point.up()
+			if (!visitedPoints.contains(upPoint)) {
+				val upList = searchEntry.inputSequence.toMutableList()
+				upList.add(north)
+				searchQueue.add(SearchEntry(upPoint, upList))
+			}
+
+			val downPoint = searchEntry.point.down()
+			if (!visitedPoints.contains(downPoint)) {
+				val downList = searchEntry.inputSequence.toMutableList()
+				downList.add(south)
+				searchQueue.add(SearchEntry(downPoint, downList))
+			}
+
+			val leftPoint = searchEntry.point.left()
+			if (!visitedPoints.contains(leftPoint)) {
+				val leftList = searchEntry.inputSequence.toMutableList()
+				leftList.add(west)
+				searchQueue.add(SearchEntry(leftPoint, leftList))
+			}
+
+			val rightpoint = searchEntry.point.right()
+			if (!visitedPoints.contains(rightpoint)) {
+				val rightList = searchEntry.inputSequence.toMutableList()
+				rightList.add(east)
+				searchQueue.add(SearchEntry(rightpoint, rightList))
+			}
+		}
+		throw IllegalStateException("Should have found the exit ..")
+	}
 
 	override fun run(vararg args: String?) {
 		val bufferedReader = BufferedReader(InputStreamReader(Aoc2019ApplicationDay15::class.java.getResourceAsStream(args[0]!!)))
+		bufferedReader.useLines {
+			it.forEach { line ->
+				val shortestPath = calculateShortesPath(line)
+				println("Found ${shortestPath} (${shortestPath.size}) as the shortest path ")
+			}
+		}
 	}
 }
 
