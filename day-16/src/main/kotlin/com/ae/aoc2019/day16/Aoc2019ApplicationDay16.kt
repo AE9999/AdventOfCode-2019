@@ -12,26 +12,45 @@ import kotlin.collections.HashMap
 @SpringBootApplication
 class Aoc2019ApplicationDay16 : CommandLineRunner {
 
-	fun calculatedatter(pattern: List<Int>, position: Int) : List<Int> {
-		return pattern.flatMap { element ->
-			                 (0 until position)
-				          .map { element } }
-				      .drop(1)
-	}
 
-	fun applyPatternToDigit(subSignal : List<Int>, pattern: List<Int>) : Int {
-		var rvalue = 0
-		for (i in 0 until subSignal.size) {
-			rvalue +=  subSignal[i] * pattern[i % pattern.size]
+	fun getIterator(position : Int, pattern: List<Int>) : Iterator<Int> {
+
+		return object : Iterator<Int> {
+
+			var currentIterator = pattern.map { element ->
+												(0..position)
+														.map { element } }
+													.flatten()
+													.drop(1)
+													.iterator()
+
+			override fun hasNext(): Boolean {
+				return true
+			}
+
+			override fun next(): Int {
+				if (!currentIterator.hasNext()) {
+					currentIterator = pattern.map { element ->
+													(0..position).map { element } }
+											 .flatten()
+											 .iterator()
+				}
+				return currentIterator.next()
+			}
 		}
-		return rvalue.toString().toCharArray().last().toString().toInt()
 	}
 
 	fun applyPattern(signal: List<Int>, pattern: List<Int>) : List<Int> {
 		var rvalue = ArrayList<Int>()
 		for (i in 0 until signal.size) {
-			val calculatedPatter = calculatedatter(pattern, i)
-			rvalue.add( applyPatternToDigit(signal.drop(i+1), calculatedPatter) )
+			var entry = 0
+			val patternIterator = getIterator(i, pattern)
+			for (j in 0 until signal.size) {
+				val paternEntry = patternIterator.next()
+				entry +=  signal[j] * paternEntry // Check this ..
+			}
+			val digit = entry.toString().last().toString().toInt()
+			rvalue.add(digit)
 		}
 		return rvalue
 	}
@@ -45,11 +64,9 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 				val basePattern = listOf(0, 1, 0, -1)
 				var numbers = line.toCharArray().map { it.toString().toInt() }
 				(0 until 100).forEach {
-					val pattern = ArrayList<Int>()
-					numbers = applyPattern(numbers, pattern)
-					println("Result: $numbers")
+					numbers = applyPattern(numbers, basePattern)
 				}
-
+				println("Result: ${numbers.take(8).joinToString(prefix = "", postfix = "", separator = "") }")
 			}
 		}
 	}
