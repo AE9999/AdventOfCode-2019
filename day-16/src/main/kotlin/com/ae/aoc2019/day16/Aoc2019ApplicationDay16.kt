@@ -8,13 +8,14 @@ import java.io.InputStreamReader
 import java.lang.RuntimeException
 import java.math.BigInteger
 import kotlin.collections.HashMap
+import kotlin.math.absoluteValue
 
 @SpringBootApplication
 class Aoc2019ApplicationDay16 : CommandLineRunner {
 
-	fun getIterator(position : Long, pattern: List<Long>) : Iterator<Long> {
+	fun getIterator(position : Int, pattern: List<Int>) : Iterator<Int> {
 
-		return object : Iterator<Long> {
+		return object : Iterator<Int> {
 
 			var currentIterator = pattern.map { element ->
 												(0..position)
@@ -27,7 +28,7 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 				return true
 			}
 
-			override fun next(): Long {
+			override fun next(): Int {
 				if (!currentIterator.hasNext()) {
 					currentIterator = pattern.map { element ->
 													(0..position).map { element } }
@@ -39,17 +40,51 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 		}
 	}
 
-	fun applyPattern(signal: List<Long>, pattern: List<Long>, it : Int) : List<Long> {
-		var rvalue = ArrayList<Long>()
+	fun applyPattern(signal: List<Int>, pattern: List<Int>, it : Int) : List<Int> {
+		var rvalue = ArrayList<Int>()
 		for (i in 0 until signal.size) {
-			println("Running $i / ${signal.size}  => $it / 100..")
+			println("Running $i out of ${signal.size} ..")
 			var entry = 0L
-			val patternIterator = getIterator(i.toLong(), pattern)
+			val patternIterator = getIterator(i, pattern)
 			for (j in 0 until signal.size) {
 				val paternEntry = patternIterator.next()
 				entry +=  signal[j] * paternEntry // Check this ..
 			}
-			val digit = entry.toString().last().toString().toLong()
+			val digit = entry.toString().last().toString().toInt()
+			rvalue.add(digit)
+		}
+		return rvalue
+	}
+
+	val myHashMap = HashMap<Int, Pair<List<Int>, List<Int>>>()
+
+	fun getMasks(index: Int, stringLenght : Int, pattern: List<Int>) : Pair<List<Int>, List<Int>> {
+		if(myHashMap.contains(index)) {
+			return myHashMap[index]!!
+		}
+		val iterator = getIterator(index, pattern)
+
+		val ones = ArrayList<Int>()
+		val minusones = ArrayList<Int>()
+		for (i in 0 until stringLenght) {
+			val next = iterator.next()
+			if (next == 0) continue
+			if (next == 1) ones.add(i)
+			else minusones.add(i)
+		}
+		myHashMap[index] = Pair(ones, minusones)
+		return myHashMap[index]!!
+	}
+
+	fun applyPatternSmart(signal: List<Int>, pattern: List<Int>, it : Int) : List<Int> {
+		var rvalue = ArrayList<Int>()
+		var entry = 0L
+		val masks = getMasks(0, signal.size.toInt(), pattern)
+		for (j in 0 until signal.size) {
+//			println("Running $j out of ${signal.size} ..")
+			entry += masks.first.map { signal[it]  }.sum()
+			entry -= masks.second.map { signal[it]  }.sum()
+			val digit = entry.absoluteValue.toInt() % 10
 			rvalue.add(digit)
 		}
 		return rvalue
@@ -61,11 +96,11 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 
 		bufferedReader.useLines {
 			it.forEach { line ->
-				val basePattern = listOf(0L, 1L, 0L, -1L)
-				var numbers : List<Long>
-				numbers = line.toCharArray().map { it.toString().toLong() }
+				val basePattern = listOf(0, 1, 0, -1)
+				var numbers : List<Int>
+				numbers = line.toCharArray().map { it.toString().toInt() }
 				(0 until 100).forEach {
-					numbers = applyPattern(numbers, basePattern, it)
+					numbers = applyPatternSmart(numbers, basePattern, it)
 				}
 				println("Result: ${numbers.take(8).joinToString(prefix = "", postfix = "", separator = "") }")
 
@@ -74,9 +109,9 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 						                       .map { it.toString() }
 						                       .joinToString(prefix = "", postfix = "", separator = "")
 						                       .toInt()
-				numbers = line.repeat(1000).toCharArray().map { it.toString().toLong() }
+				numbers = line.repeat(1000).toCharArray().map { it.toString().toInt() }
 				(0 until 100).forEach {
-					numbers = applyPattern(numbers, basePattern, it)
+					numbers = applyPatternSmart(numbers, basePattern, it)
 				}
 				val finalOutput = numbers.drop(first7numbers)
 						                        .take(8)
