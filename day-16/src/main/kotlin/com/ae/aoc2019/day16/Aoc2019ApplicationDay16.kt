@@ -43,7 +43,7 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 	fun applyPattern(signal: List<Int>, pattern: List<Int>, it : Int) : List<Int> {
 		var rvalue = ArrayList<Int>()
 		for (i in 0 until signal.size) {
-			println("Running $i out of ${signal.size} ..")
+//			println("Running $i out of ${signal.size} ..")
 			var entry = 0L
 			val patternIterator = getIterator(i, pattern)
 			for (j in 0 until signal.size) {
@@ -56,9 +56,11 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 		return rvalue
 	}
 
-	val myHashMap = HashMap<Int, Pair<List<Int>, List<Int>>>()
 
-	fun getMasks(index: Int, stringLenght : Int, pattern: List<Int>) : Pair<List<Int>, List<Int>> {
+	fun getMasks(index: Int,
+				 stringLenght : Int,
+				 pattern: List<Int>,
+				 myHashMap : MutableMap<Int, Pair<List<Int>, List<Int>>>) : Pair<List<Int>, List<Int>> {
 		if(myHashMap.contains(index)) {
 			return myHashMap[index]!!
 		}
@@ -76,15 +78,15 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 		return myHashMap[index]!!
 	}
 
-	fun applyPatternSmart(signal: List<Int>, pattern: List<Int>, it : Int) : List<Int> {
+	fun applyPatternSmart(signal: List<Int>,
+						  pattern: List<Int>,
+						  myHashMap : MutableMap<Int, Pair<List<Int>, List<Int>>>,
+						  it : Int) : List<Int> {
 		var rvalue = ArrayList<Int>()
-		var entry = 0L
-		val masks = getMasks(0, signal.size.toInt(), pattern)
 		for (j in 0 until signal.size) {
-//			println("Running $j out of ${signal.size} ..")
-			entry += masks.first.map { signal[it]  }.sum()
-			entry -= masks.second.map { signal[it]  }.sum()
-			val digit = entry.absoluteValue.toInt() % 10
+			val masks = getMasks(j, signal.size, pattern, myHashMap)
+			val entry = masks.first.map { signal[it]  }.sum() - masks.second.map { signal[it]  }.sum()
+			val digit = entry.absoluteValue % 10
 			rvalue.add(digit)
 		}
 		return rvalue
@@ -98,12 +100,23 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 			it.forEach { line ->
 				val basePattern = listOf(0, 1, 0, -1)
 				var numbers : List<Int>
-				numbers = line.toCharArray().map { it.toString().toInt() }
-				(0 until 100).forEach {
-					numbers = applyPatternSmart(numbers, basePattern, it)
-				}
-				println("Result: ${numbers.take(8).joinToString(prefix = "", postfix = "", separator = "") }")
+				var numbersQuick : List<Int>
+				var myHashMap: MutableMap<Int, Pair<List<Int>, List<Int>>>
 
+				myHashMap = HashMap()
+				numbers = line.toCharArray().map { it.toString().toInt() }
+				numbersQuick = numbers.toList()
+				(0 until 100).forEach {
+					numbers = applyPattern(numbers, basePattern, it)
+					numbersQuick = applyPatternSmart(numbersQuick, basePattern, myHashMap, it)
+
+					val rNumbers = numbers.take(8).joinToString(prefix = "", postfix = "", separator = "")
+					val rNumbersQ = numbersQuick.take(8).joinToString(prefix = "", postfix = "", separator = "")
+					if (rNumbers != rNumbersQ) {
+						throw RuntimeException("Our Cached method failed ..")
+					}
+				}
+				myHashMap = HashMap()
 				val first7numbers = line.toCharArray()
 						                       .take(7)
 						                       .map { it.toString() }
@@ -111,7 +124,8 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 						                       .toInt()
 				numbers = line.repeat(1000).toCharArray().map { it.toString().toInt() }
 				(0 until 100).forEach {
-					numbers = applyPatternSmart(numbers, basePattern, it)
+					println("Running $it / 100")
+					numbers = applyPatternSmart(numbers, basePattern, myHashMap, it)
 				}
 				val finalOutput = numbers.drop(first7numbers)
 						                        .take(8)
