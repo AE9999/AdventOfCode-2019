@@ -115,7 +115,7 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 						                       .map { it.toString() }
 						                       .joinToString(prefix = "", postfix = "", separator = "")
 						                       .toInt()
-				numbers = line.repeat(1000).toCharArray().map { it.toString().toInt() }
+				numbers = line.repeat(10000).toCharArray().map { it.toString().toInt() }
 				(0 until 100).forEach {
 					println("Running $it / 100")
 					numbers = applyPatternSmart(numbers, basePattern, it)
