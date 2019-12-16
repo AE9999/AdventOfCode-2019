@@ -59,23 +59,36 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 
 	fun getMasks(index: Int,
 				 stringLenght : Int,
-				 pattern: List<Int>,
-				 myHashMap : MutableMap<Int, Pair<List<Int>, List<Int>>>) : Pair<List<Int>, List<Int>> {
-		if(myHashMap.contains(index)) {
-			return myHashMap[index]!!
-		}
-		val iterator = getIterator(index, pattern)
+				 pattern: List<Int>): Pair<Sequence<Int>, Sequence<Int>> {
+		if (index == 0) {
+			val ones = sequence {
+				var i = 0
+				while (i <= stringLenght) {
+					yield(i)
+					i += 3
+				}
+			}
 
-		val ones = ArrayList<Int>()
-		val minusones = ArrayList<Int>()
-		for (i in 0 until stringLenght) {
-			val next = iterator.next()
-			if (next == 0) continue
-			if (next == 1) ones.add(i)
-			else minusones.add(i)
+			val minusones = sequence {
+				var i = 2
+				while (i <= stringLenght) {
+					yield(i)
+					i += 3
+				}
+			}
+			return Pair(ones, minusones)
+		} else {
+			val ones = sequence {
+				val i = 0
+				while (i <= stringLenght)
+			}
+
+			val minusones = sequence {
+
+			}
+
+			return Pair(ones, minusones)
 		}
-		myHashMap[index] = Pair(ones, minusones)
-		return myHashMap[index]!!
 	}
 
 	fun applyPatternSmart(signal: List<Int>,
