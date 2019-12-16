@@ -6,9 +6,9 @@ import org.springframework.boot.runApplication
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.RuntimeException
-import java.math.BigInteger
 import kotlin.collections.HashMap
 import kotlin.math.absoluteValue
+import kotlin.math.min
 
 @SpringBootApplication
 class Aoc2019ApplicationDay16 : CommandLineRunner {
@@ -43,7 +43,6 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 	fun applyPattern(signal: List<Int>, pattern: List<Int>, it : Int) : List<Int> {
 		var rvalue = ArrayList<Int>()
 		for (i in 0 until signal.size) {
-//			println("Running $i out of ${signal.size} ..")
 			var entry = 0L
 			val patternIterator = getIterator(i, pattern)
 			for (j in 0 until signal.size) {
@@ -57,48 +56,31 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 	}
 
 
-	fun getMasks(index: Int,
+	fun getMasks(position: Int,
 				 stringLenght : Int,
-				 pattern: List<Int>): Pair<Sequence<Int>, Sequence<Int>> {
-		if (index == 0) {
-			val ones = sequence {
-				var i = 0
-				while (i <= stringLenght) {
-					yield(i)
-					i += 3
+				 pattern: List<Int>): Sequence<Pair<Int, Int>> {
+		return sequence {
+			var minus = false
+			var index = position;
+			while (index < stringLenght) {
+				val amount = position + 1
+				(index until  min(index + amount, stringLenght)).forEach {
+					yield(Pair(it, if (minus) -1 else 1) )
 				}
+				index += amount * 2
+				minus = !minus
 			}
-
-			val minusones = sequence {
-				var i = 2
-				while (i <= stringLenght) {
-					yield(i)
-					i += 3
-				}
-			}
-			return Pair(ones, minusones)
-		} else {
-			val ones = sequence {
-				val i = 0
-				while (i <= stringLenght)
-			}
-
-			val minusones = sequence {
-
-			}
-
-			return Pair(ones, minusones)
 		}
 	}
 
 	fun applyPatternSmart(signal: List<Int>,
 						  pattern: List<Int>,
-						  myHashMap : MutableMap<Int, Pair<List<Int>, List<Int>>>,
 						  it : Int) : List<Int> {
 		var rvalue = ArrayList<Int>()
 		for (j in 0 until signal.size) {
-			val masks = getMasks(j, signal.size, pattern, myHashMap)
-			val entry = masks.first.map { signal[it]  }.sum() - masks.second.map { signal[it]  }.sum()
+			val entry = getMasks(j, signal.size, pattern).map {
+																	signal[it.first] * it.second
+																}.sum()
 			val digit = entry.absoluteValue % 10
 			rvalue.add(digit)
 		}
@@ -114,14 +96,12 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 				val basePattern = listOf(0, 1, 0, -1)
 				var numbers : List<Int>
 				var numbersQuick : List<Int>
-				var myHashMap: MutableMap<Int, Pair<List<Int>, List<Int>>>
 
-				myHashMap = HashMap()
 				numbers = line.toCharArray().map { it.toString().toInt() }
 				numbersQuick = numbers.toList()
 				(0 until 100).forEach {
 					numbers = applyPattern(numbers, basePattern, it)
-					numbersQuick = applyPatternSmart(numbersQuick, basePattern, myHashMap, it)
+					numbersQuick = applyPatternSmart(numbersQuick, basePattern, it)
 
 					val rNumbers = numbers.take(8).joinToString(prefix = "", postfix = "", separator = "")
 					val rNumbersQ = numbersQuick.take(8).joinToString(prefix = "", postfix = "", separator = "")
@@ -129,7 +109,7 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 						throw RuntimeException("Our Cached method failed ..")
 					}
 				}
-				myHashMap = HashMap()
+
 				val first7numbers = line.toCharArray()
 						                       .take(7)
 						                       .map { it.toString() }
@@ -138,7 +118,7 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 				numbers = line.repeat(1000).toCharArray().map { it.toString().toInt() }
 				(0 until 100).forEach {
 					println("Running $it / 100")
-					numbers = applyPatternSmart(numbers, basePattern, myHashMap, it)
+					numbers = applyPatternSmart(numbers, basePattern, it)
 				}
 				val finalOutput = numbers.drop(first7numbers)
 						                        .take(8)
