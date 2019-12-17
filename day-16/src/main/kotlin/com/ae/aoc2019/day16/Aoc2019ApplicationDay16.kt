@@ -6,7 +6,6 @@ import org.springframework.boot.runApplication
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.RuntimeException
-import kotlin.collections.HashMap
 import kotlin.math.absoluteValue
 import kotlin.math.min
 
@@ -56,17 +55,15 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 	}
 
 
-	fun getMasks(position: Int,
-				 stringLenght : Int,
-				 pattern: List<Int>): Sequence<Pair<Int, Int>> {
+	fun getRanges(position: Int,
+				  stringLenght : Int,
+				  pattern: List<Int>): Sequence<Pair<Int, Int>> {
 		return sequence {
 			var minus = false
 			var index = position;
 			while (index < stringLenght) {
 				val amount = position + 1
-				(index until  min(index + amount, stringLenght)).forEach {
-					yield(Pair(it, if (minus) -1 else 1) )
-				}
+				yield(Pair(index, index + amount))
 				index += amount * 2
 				minus = !minus
 			}
@@ -78,7 +75,7 @@ class Aoc2019ApplicationDay16 : CommandLineRunner {
 						  it : Int) : List<Int> {
 		var rvalue = ArrayList<Int>()
 		for (j in 0 until signal.size) {
-			val entry = getMasks(j, signal.size, pattern).map {
+			val entry = getRanges(j, signal.size, pattern).map {
 																	signal[it.first] * it.second
 																}.sum()
 			val digit = entry.absoluteValue % 10
