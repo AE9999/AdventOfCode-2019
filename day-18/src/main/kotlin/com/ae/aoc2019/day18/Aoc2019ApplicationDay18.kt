@@ -74,7 +74,7 @@ class Aoc2019ApplicationDay18 : CommandLineRunner {
 					  keys: HashMap<String, Point>,
 					  doors: HashMap<String, Point>,
 					  panel: MutableMap<Point, String>): Int {
-
+		return 0
 	}
 
 	override fun run(vararg args: String?) {
