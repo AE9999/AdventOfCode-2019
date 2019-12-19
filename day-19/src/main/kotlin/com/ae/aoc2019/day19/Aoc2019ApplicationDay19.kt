@@ -8,15 +8,22 @@ import java.io.InputStreamReader
 import java.lang.RuntimeException
 import java.math.BigInteger
 import java.util.ArrayList
-import kotlin.math.absoluteValue
-import kotlin.math.min
 
 @SpringBootApplication
 class Aoc2019ApplicationDay19 : CommandLineRunner {
 
 	val programMem = HashMap<BigInteger, BigInteger>().withDefault { BigInteger.ZERO }
 
-	class ASCII(val programMem: MutableMap<BigInteger, BigInteger>) {
+	data class Point(val x: Int, val y: Int) {
+		fun up(): Point {  return Point(x, y+1) }
+		fun down(): Point {  return Point(x, y  -1 ) }
+		fun left(): Point {  return Point(x - 1, y  ) }
+		fun right(): Point {  return Point(x + 1, y  ) }
+
+		fun asInput(): Iterator<BigInteger> = listOf(x.toBigInteger(), y.toBigInteger()).iterator()
+	}
+
+	class Drone(val programMem: MutableMap<BigInteger, BigInteger>) {
 
 		var pc: BigInteger = BigInteger.ZERO
 		var relativeBase: BigInteger = BigInteger.ZERO
@@ -118,11 +125,21 @@ class Aoc2019ApplicationDay19 : CommandLineRunner {
 				for (i in 0 until rawProgram.size) {
 					programMem[i.toBigInteger()] = BigInteger(rawProgram[i])
 				}
-				val ascii = ASCII(programMem.toMutableMap())
-				val outputs = ascii.run(listOf<BigInteger>().iterator())
-				for  (output in outputs) {
-					print(output.toInt().toChar().toString())
+
+				val seq = sequence {
+					for (x in 0..49) {
+						for (y in 0..49) {
+							yield(Point(x,y))
+						}
+					}
 				}
+
+				val totalAffectedpooints = seq.map {
+					val drone = Drone(programMem.toMutableMap().withDefault { BigInteger.ZERO })
+					drone.run(it.asInput()).first()!!.toInt()
+				}.sum()
+
+				println("Total sum of effected points: ${totalAffectedpooints} ..")
 			}
 		}
 	}
